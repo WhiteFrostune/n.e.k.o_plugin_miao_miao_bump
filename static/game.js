@@ -390,6 +390,10 @@
         if (event.type === 'damage') {
           const ring = world.snapshot().find(item => item.id === event.id);
           if (ring) combatEffects.push({ ...event, x: ring.x, y: ring.y, age: 0 });
+          for (const id of [event.id, event.attacker]) {
+            const previous = reactions.get(id);
+            reactions.set(id, { age: 0, strength: previous?.strength ?? 0.3, angle: previous?.angle ?? 0 });
+          }
           if (event.guard) S.play('guard');
           combatChanged = true;
         } else if (event.type === 'retreat') retreats.push({ ...event, age: 0 });

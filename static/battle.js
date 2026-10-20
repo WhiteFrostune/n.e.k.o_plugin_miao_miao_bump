@@ -4,7 +4,6 @@
   else root.MiaoBattle = factory(root.MiaoPhysics);
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (P) {
   'use strict';
-  const DAMAGE_SPEED = 180;
   const ROLES = Object.freeze([
     Object.freeze({ key: 'juzi', hp: 120, attack: 24, mass: 1.6, wallBonus: 0 }),
     Object.freeze({ key: 'pudding', hp: 85, attack: 18, mass: 1, wallBonus: 0.07 }),
@@ -15,7 +14,7 @@
   class Match {
     constructor() {
       this.world = new P.PoolWorld();
-      this.world.onImpact = impact => this.handleImpact(impact);
+      this.world.onContact = contact => this.handleContact(contact);
       this.reset();
     }
 
@@ -55,10 +54,11 @@
       return true;
     }
 
-    handleImpact(impact) {
-      if (this.phase !== 'moving' || impact.wall || impact.speed < DAMAGE_SPEED || impact.ringIds.length !== 2) return;
-      const [a, b] = impact.ringIds.map(id => this.actors.find(cat => cat.id === id));
+    handleContact(contact) {
+      if (this.phase !== 'moving' || contact.wall || contact.ringIds.length !== 2) return;
+      const [a, b] = contact.ringIds.map(id => this.actors.find(cat => cat.id === id));
       if (!a || !b || a.hp <= 0 || b.hp <= 0 || a.team === b.team) return;
+      // The acting TEAM owns the damage. Its cat can be stationary or unselected.
       const attacker = a.team === this.side ? a : b;
       const defender = a.team === this.side ? b : a;
       const guard = defender.role === 2 && !defender.shieldUsed ? 8 : 0;
@@ -142,7 +142,8 @@
         }
         speed -= params.drag * hit.distance;
         let score = -distance * 0.002;
-        if (hit.type === 'ring' && speed >= DAMAGE_SPEED) {
+        // Reach estimate only: this is the simulation's natural stop speed, not a damage threshold.
+        if (hit.type === 'ring' && speed > P.STOP_SPEED) {
           const victim = cats.reduce((closest, candidate) => {
             if (candidate.id === cat.id) return closest;
             const gap = Math.hypot(candidate.x - hit.x, candidate.y - hit.y);
@@ -162,5 +163,5 @@
     return best;
   }
 
-  return { Match, ROLES, DAMAGE_SPEED, chooseShot };
+  return { Match, ROLES, chooseShot };
 });

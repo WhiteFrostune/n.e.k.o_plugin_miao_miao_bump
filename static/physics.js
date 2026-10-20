@@ -150,6 +150,9 @@
       const removed = new Set(ids);
       for (const ring of this.rings) if (removed.has(ring.id)) Composite.remove(this.engine.world, ring.body);
       this.rings = this.rings.filter(ring => !removed.has(ring.id));
+      for (const [key, contact] of this._contacts) {
+        if (removed.has(contact.a.plugin.ringId) || removed.has(contact.b.plugin.ringId)) this._contacts.delete(key);
+      }
       return true;
     }
 
@@ -168,7 +171,6 @@
       this.fault = false;
       this.impacts = [];
       this._lastImpacts.clear();
-      this._contacts.clear();
       return true;
     }
 
@@ -190,18 +192,19 @@
         const key = [pair.bodyA.id, pair.bodyB.id].sort((x, y) => x - y).join(':');
         if (!wall) {
           if (this._contacts.has(key)) continue;
-          this._contacts.set(key, { a: pair.bodyA, b: pair.bodyB, separated: 0 });
+          this._contacts.set(key, { a: pair.bodyA, b: pair.bodyB });
         }
-        if (impactSpeed < 65 || this.elapsed - (this._lastImpacts.get(key) ?? -1) < 0.1) continue;
-        this._lastImpacts.set(key, this.elapsed);
-        this.count += 1;
         const support = pair.collision.supports.find(Boolean) || dynamic.position;
         const ringIds = [pair.bodyA, pair.bodyB].filter(body => !body.isStatic).map(body => body.plugin.ringId);
         const impact = { x: support.x, y: support.y, speed: impactSpeed, wall,
           ringId: dynamic.plugin.ringId, ringIds, normal: { x: normal.x, y: normal.y } };
+        // Every new ring contact reaches combat, regardless of speed or which body moved.
+        // Splash/sound intensity and the practice impact counter have separate filtering.
+        if (!wall && this.onContact) this.onContact(impact);
+        if (impactSpeed < 65 || this.elapsed - (this._lastImpacts.get(key) ?? -1) < 0.1) continue;
+        this._lastImpacts.set(key, this.elapsed);
+        this.count += 1;
         this.impacts.push(impact);
-        // Combat resolves in the physical step, so a defeated cat cannot attack later in this frame.
-        if (this.onImpact) this.onImpact(impact);
       }
     }
 
@@ -210,8 +213,9 @@
       const dt = STEP_MS / 1000;
       for (const [key, contact] of this._contacts) {
         const distance = Math.hypot(contact.a.position.x - contact.b.position.x, contact.a.position.y - contact.b.position.y);
-        contact.separated = distance > RADIUS * 2 + 2 ? contact.separated + dt : 0;
-        if (contact.separated >= 0.04) this._contacts.delete(key);
+        // Small spatial hysteresis rejects solver jitter, without a timer or speed gate
+        // that would swallow a genuine quick rebound or a slow follow-up contact.
+        if (distance > RADIUS * 2 + 0.5) this._contacts.delete(key);
       }
       this.elapsed += dt;
       const decay = Math.exp(-this.params.drag * dt);
@@ -266,7 +270,7 @@
     }
 
     destroy() {
-      this.onImpact = null;
+      this.onContact = null;
       Events.off(this.engine, 'collisionStart', this._collisionHandler);
       Events.off(this.engine, 'collisionActive', this._activeHandler);
       Composite.clear(this.engine.world, false);
@@ -276,5 +280,5 @@
     }
   }
 
-  return { PoolWorld, launchVector, firstContact, WIDTH, HEIGHT, RADIUS, BOUNDS, DEFAULTS, LIMITS, LAYOUTS, STEP_MS };
+  return { PoolWorld, launchVector, firstContact, WIDTH, HEIGHT, RADIUS, BOUNDS, DEFAULTS, LIMITS, LAYOUTS, STEP_MS, STOP_SPEED };
 });

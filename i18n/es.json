@@ -61,7 +61,7 @@
   "battle.enemy": "CPU",
   "battle.guard": "Cojín −8",
   "battle.restart": "Nueva partida",
-  "battle.hint": "◆ Tus gatas · ● CPU. Arrastra una gata propia; el turno cambia al detenerse todos los flotadores.",
+  "battle.hint": "En tu turno, el enemigo recibe daño al tocar a cualquier ◆ aliada, aunque esté quieta. En el turno de la CPU es al revés.",
   "battle.practiceNote": "La práctica no tiene daño ni pasivas. Ajusta la física libremente.",
   "battle.tuningNote": "La batalla usa ajustes fijos y pasivas. Cambia a práctica para ajustar la física.",
   "battle.resultNote": "Las gatas derrotadas salen cuando termina el movimiento. ¿Otra partida?",

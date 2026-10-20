@@ -61,7 +61,7 @@
   "battle.enemy": "電腦",
   "battle.guard": "軟墊減傷 8",
   "battle.restart": "再開一局",
-  "battle.hint": "◆ 我方 · ● 電腦。拖曳己方貓貓發射，全場停穩後換邊。",
+  "battle.hint": "我方行動時，敵人碰到任意 ◆ 我方貓貓都扣血；電腦行動時反過來。全場停穩後換邊。",
   "battle.practiceNote": "練習模式不扣血、不開被動，可以自由調整手感。",
   "battle.tuningNote": "對戰使用固定參數和角色被動；切到自由練習可調手感。",
   "battle.resultNote": "這一發停穩後，敗退的貓貓離場。再來一局吧！",

@@ -160,7 +160,9 @@ def run(url):
             assert set(snapshot(page)["art"]["reactingIds"]) == {0, 1}
             assert all(cat["activeFrame"] == 1 for cat in snapshot(page)["art"]["characters"][:2])
             page.wait_for_function("window.miaoPlayground.snapshot().art.activeFrame === 2", polling="raf")
-            assert all(cat["activeFrame"] == 2 for cat in snapshot(page)["art"]["characters"][:2])
+            # Each cat may hit a wall again at a different time; their rebound
+            # expressions need not be visible in the exact same sampled frame.
+            page.wait_for_function("window.miaoPlayground.snapshot().art.characters[1].activeFrame === 2", polling="raf")
             page.click("#reset")
             assert snapshot(page)["art"]["activeFrame"] == 0
             checks.append("collision drives impact/rebound on both floats; reset clears reactions")

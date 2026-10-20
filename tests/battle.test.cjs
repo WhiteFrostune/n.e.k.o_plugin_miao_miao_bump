@@ -26,15 +26,14 @@ test('battle has two distinct trios, fixed stats and turn ownership; invalid sho
   match.destroy();
 });
 
-test('wall, friendly and slow contacts do not damage; a moving teammate uses its own attack without counterattack', () => {
+test('walls and teammates do no damage; the acting team owns damage regardless of mover or speed', () => {
   const match = new B.Match();
   match.launch(0, { x: 20, y: 0 });
-  match.handleImpact({ ...hit(0, 3), wall: true });
-  match.handleImpact(hit(0, 1));
-  match.handleImpact(hit(3, 4));
-  match.handleImpact(hit(0, 3, B.DAMAGE_SPEED - 1));
+  match.handleContact({ ...hit(0, 3), wall: true });
+  match.handleContact(hit(0, 1));
+  match.handleContact(hit(3, 4));
   assert.deepEqual(match.actors.map(cat => cat.hp), [120, 85, 100, 120, 85, 100]);
-  match.handleImpact(hit(3, 1));
+  match.handleContact(hit(3, 1, 0));
   assert.equal(match.actors[3].hp, 102);
   assert.equal(match.actors[1].hp, 85);
   match.destroy();
@@ -43,16 +42,15 @@ test('wall, friendly and slow contacts do not damage; a moving teammate uses its
 test('Milkcap guard triggers only on the first valid hit in each enemy action and resets next action', () => {
   const match = new B.Match();
   match.launch(0, { x: 20, y: 0 });
-  match.handleImpact(hit(0, 5, 100));
-  assert.equal(match.actors[5].shieldUsed, false);
-  match.handleImpact(hit(0, 5));
+  match.handleContact(hit(0, 5, 10));
+  assert.equal(match.actors[5].shieldUsed, true);
   assert.equal(match.actors[5].hp, 84);
-  match.handleImpact(hit(1, 5));
+  match.handleContact(hit(1, 5));
   assert.equal(match.actors[5].hp, 66);
   settle(match);
   match.launch(3, { x: -20, y: 0 }); settle(match);
   match.launch(0, { x: 20, y: 0 });
-  match.handleImpact(hit(1, 5));
+  match.handleContact(hit(1, 5));
   assert.equal(match.actors[5].hp, 56);
   match.destroy();
 });
@@ -61,12 +59,12 @@ test('zero HP immediately disables attacks and passives but leaves a physical bo
   const match = new B.Match();
   match.actors[3].hp = 24;
   match.launch(0, { x: 20, y: 0 });
-  match.handleImpact(hit(0, 3));
+  match.handleContact(hit(0, 3));
   assert.equal(match.actors[3].hp, 0);
   assert.equal(match.world.snapshot().length, 6);
   assert.equal(match.world.snapshot().find(cat => cat.id === 3).mass, 1);
   const events = match.drainEvents();
-  match.handleImpact(hit(1, 3));
+  match.handleContact(hit(1, 3));
   assert.equal(match.drainEvents().length, 0);
   assert.equal(events.filter(event => event.type === 'damage').length, 1);
   settle(match);
@@ -75,7 +73,7 @@ test('zero HP immediately disables attacks and passives but leaves a physical bo
   assert.ok(match.drainEvents().some(event => event.type === 'retreat' && event.id === 3));
   // A defeated attacker is inert even if a stale physical impact arrives later.
   match.launch(4, { x: 20, y: 0 });
-  match.handleImpact(hit(3, 0));
+  match.handleContact(hit(3, 0));
   assert.equal(match.actors[0].hp, 120);
   match.destroy();
 });
@@ -129,13 +127,13 @@ test('Pudding keeps more speed only on walls; defeat immediately removes that wa
   assert.ok(bounce(0.07) > bounce(0) * 1.06);
   const match = new B.Match();
   match.actors[4].hp = 24;
-  match.launch(0, { x: 20, y: 0 }); match.handleImpact(hit(0, 4));
+  match.launch(0, { x: 20, y: 0 }); match.handleContact(hit(0, 4));
   assert.equal(match.world.rings.find(cat => cat.id === 4).body.plugin.wallBonus, 0);
   match.destroy();
 });
 
-test('a real head-on hit applies damage once and a slow real tap applies none', () => {
-  for (const speed of [100, 1000]) {
+test('real slow contacts below both former thresholds still damage, independently of splash counting', () => {
+  for (const speed of [30, 100, 1000]) {
     const match = new B.Match();
     match.world.reset('test', [{ id: 0, x: 300, y: 300, mass: 1.6 }, { id: 3, x: 385, y: 300, mass: 1.6 }]);
     match.launch(0, { x: speed, y: 0 });
@@ -144,14 +142,73 @@ test('a real head-on hit applies damage once and a slow real tap applies none', 
       match.advance(1000 / 60);
       damage.push(...match.drainEvents().filter(event => event.type === 'damage'));
     }
-    if (speed === 100) assert.equal(damage.length, 0);
-    else {
-      assert.ok(damage.length >= 1);
-      assert.ok(damage[0].id === 3 && damage[0].damage === 24);
-    }
+    assert.ok(damage.length >= 1);
+    assert.ok(damage[0].id === 3 && damage[0].damage === 24);
+    if (speed === 30) { assert.equal(damage.length, 1); assert.equal(match.world.count, 0); }
     assert.ok(match.actors.slice(0, 3).every(cat => cat.hp === cat.maxHp));
     match.destroy();
   }
+});
+
+test('both sides can bounce an opponent into an unselected stationary teammate for that teammate damage', () => {
+  for (const side of [0, 1]) {
+    const match = new B.Match();
+    match.side = side;
+    const active = side * 3, teammate = active + 1, target = (1 - side) * 3;
+    const mirror = x => side === 0 ? x : P.WIDTH - x;
+    match.world.reset('chain-test', [
+      { id: active, x: mirror(200), y: 300, mass: 1.6 },
+      { id: target, x: mirror(460), y: 300, mass: 1.6 },
+      { id: teammate, x: mirror(720), y: 300, mass: 1 },
+    ]);
+    let stationary = false;
+    const onContact = match.world.onContact;
+    match.world.onContact = contact => {
+      if (contact.ringIds.includes(teammate) && contact.ringIds.includes(target) && !stationary) {
+        const body = match.world.rings.find(cat => cat.id === teammate).body;
+        const velocity = match.world._velocities.get(body.id);
+        stationary = Math.hypot(velocity.x, velocity.y) < 1e-6;
+      }
+      onContact(contact);
+    };
+    match.launch(active, { x: side === 0 ? 800 : -800, y: 0 });
+    const damage = [];
+    while (match.phase === 'moving') {
+      match.advance(1000 / 60);
+      damage.push(...match.drainEvents().filter(event => event.type === 'damage'));
+    }
+    assert.equal(stationary, true);
+    assert.deepEqual(damage.slice(0, 2).map(event => [event.attacker, event.id, event.damage]),
+      [[active, target, 24], [teammate, target, 18]]);
+    assert.ok(match.actors.filter(cat => cat.team === side).every(cat => cat.hp === cat.maxHp));
+    match.destroy();
+  }
+});
+
+test('sustained touching deals once; separating and returning quickly deals again even below splash speed', () => {
+  const { Body } = require('../static/vendor/matter-0.20.0.min.js');
+  const match = new B.Match();
+  match.world.reset('contact-test', [{ id: 0, x: 300, y: 300 }, { id: 3, x: 385, y: 300 }]);
+  match.launch(0, { x: 30, y: 0 });
+  while (match.actors[3].hp === 120 && match.world.moving) match.world.step();
+  assert.equal(match.actors[3].hp, 96);
+  const firstTime = match.world.elapsed;
+  const [a, b] = match.world.rings.map(cat => cat.body);
+  for (let i = 0; i < 8; i += 1) {
+    Body.setPosition(a, { x: 300, y: 300 }); Body.setPosition(b, { x: 380, y: 300 });
+    Body.setVelocity(a, { x: 0, y: 0 }); Body.setVelocity(b, { x: 0, y: 0 });
+    match.world.step();
+  }
+  assert.equal(match.actors[3].hp, 96);
+  Body.setPosition(b, { x: 381, y: 300 });
+  match.world.step();
+  Body.setPosition(b, { x: 380.05, y: 300 });
+  Body.setVelocity(a, { x: 30 / 60, y: 0 });
+  for (let i = 0; i < 5; i += 1) match.world.step();
+  assert.equal(match.actors[3].hp, 72);
+  assert.ok(match.world.elapsed - firstTime < 0.1);
+  assert.equal(match.world.count, 0);
+  match.destroy();
 });
 
 test('persistent contact and sub-gap jitter cannot rearm damage, genuine separation can', () => {
@@ -176,6 +233,30 @@ test('persistent contact and sub-gap jitter cannot rearm damage, genuine separat
   while (world.count === before && world.moving) world.step();
   assert.ok(world.count > before);
   world.destroy();
+});
+
+test('changing turns does not turn an existing resting contact into another attack', () => {
+  const { Body } = require('../static/vendor/matter-0.20.0.min.js');
+  const match = new B.Match();
+  match.world.reset('resting-test', [
+    { id: 0, x: 300, y: 300 }, { id: 3, x: 380, y: 300 }, { id: 4, x: 650, y: 450 },
+  ]);
+  match.launch(0, { x: 30, y: 0 });
+  while (match.actors[3].hp === 120 && match.world.moving) match.world.step();
+  assert.equal(match.actors[3].hp, 96);
+  for (const { body } of match.world.rings) Body.setVelocity(body, { x: 0, y: 0 });
+  const defender = match.world.rings.find(cat => cat.id === 3).body;
+  Body.setPosition(defender, { x: 379.9, y: 300 });
+  settle(match);
+  assert.equal(match.side, 1);
+  match.launch(4, { x: 20, y: 0 }); settle(match);
+  assert.equal(match.actors[0].hp, 120);
+  assert.equal(match.actors[3].hp, 96);
+  // A new approach in a later turn still counts once the rings have separated.
+  Body.setPosition(defender, { x: 385, y: 300 });
+  match.launch(0, { x: 30, y: 0 }); settle(match);
+  assert.equal(match.actors[3].hp, 72);
+  match.destroy();
 });
 
 test('fixed-step combat gives identical HP and positions at 30 and 144 display FPS', () => {

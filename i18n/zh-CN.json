@@ -61,7 +61,7 @@
   "battle.enemy": "电脑",
   "battle.guard": "软垫减伤 8",
   "battle.restart": "再开一局",
-  "battle.hint": "◆ 我方 · ● 电脑。拖拽己方猫猫发射，全场停稳后换边。",
+  "battle.hint": "我方行动时，敌人碰到任意 ◆ 我方猫猫都扣血；电脑行动时反过来。全场停稳后换边。",
   "battle.practiceNote": "练习模式不扣血、不开被动，可以自由调整手感。",
   "battle.tuningNote": "对战使用固定参数和角色被动；切到自由练习可以调手感。",
   "battle.resultNote": "这一发停稳后，败退的猫猫离场。再来一局吧！",

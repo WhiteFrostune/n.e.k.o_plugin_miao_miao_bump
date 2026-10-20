@@ -61,7 +61,7 @@
   "battle.enemy": "CPU",
   "battle.guard": "クッション −8",
   "battle.restart": "もう一戦",
-  "battle.hint": "◆ 味方 · ● CPU。味方を引いて発射。全員が止まったら交代。",
+  "battle.hint": "味方の番は、止まっている◆味方に敵が触れてもダメージ。CPUの番は逆になります。全員が止まったら交代。",
   "battle.practiceNote": "練習はダメージ・パッシブなし。自由に手触りを調整できます。",
   "battle.tuningNote": "バトルは固定設定とパッシブを使用。調整は自由練習で。",
   "battle.resultNote": "全員が止まったら、倒れたねこが退場。もう一戦！",

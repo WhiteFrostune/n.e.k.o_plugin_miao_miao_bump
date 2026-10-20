@@ -61,7 +61,7 @@
   "battle.enemy": "CPU",
   "battle.guard": "Cushion −8",
   "battle.restart": "New match",
-  "battle.hint": "◆ Your cats · ● CPU cats. Pull your cat back to launch; alternate after all rings settle.",
+  "battle.hint": "On your turn, enemies take damage on contact with any ◆ ally, even a stationary one. On CPU turns, the reverse applies.",
   "battle.practiceNote": "Practice has no damage or passive skills. Adjust the feel freely.",
   "battle.tuningNote": "Battle uses fixed defaults and character passives. Switch to practice to tune the feel.",
   "battle.resultNote": "All defeated cats leave after the shot settles. Ready for another round?",

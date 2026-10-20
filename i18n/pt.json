@@ -61,7 +61,7 @@
   "battle.enemy": "CPU",
   "battle.guard": "Almofada −8",
   "battle.restart": "Nova partida",
-  "battle.hint": "◆ Suas gatas · ● CPU. Puxe uma gata sua; a vez muda quando todas as boias param.",
+  "battle.hint": "Na sua vez, inimigas recebem dano ao tocar qualquer ◆ aliada, mesmo parada. Na vez da CPU, acontece o contrário.",
   "battle.practiceNote": "O treino não tem dano nem passivas. Ajuste a física livremente.",
   "battle.tuningNote": "A batalha usa ajustes fixos e passivas. Mude para treino para ajustar a física.",
   "battle.resultNote": "As gatas derrotadas saem quando o movimento termina. Mais uma partida?",

@@ -15,4 +15,8 @@ store.db
 *.log
 *.lock
 target/
+tests/artifacts/
+# Bundle the browser engine; the root Python vendor directory stays generated.
+!static/vendor/
+!static/vendor/**
 .DS_Store

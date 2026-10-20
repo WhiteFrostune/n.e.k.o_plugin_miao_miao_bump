@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meow Meow Bump Battle</title>
+  <link rel="icon" href="data:,">
+  <script>
+    if (/\/plugin\/miao_miao_bump\/ui$/.test(location.pathname)) {
+      const base = document.createElement('base');
+      base.href = location.pathname + '/';
+      document.head.append(base);
+    }
+  </script>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="vendor/matter-0.20.0.min.js"></script>
+  <script defer src="physics.js"></script>
+  <script defer src="i18n.js"></script>
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">✦</span><div><p class="eyebrow" data-t="ui.prototype"></p><h1 data-t="plugin.name"></h1></div></div>
+      <label class="language"><span data-t="ui.language"></span><select id="language" aria-label="Language"><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="en">English</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="ru">Русский</option><option value="es">Español</option><option value="pt">Português</option></select></label>
+    </header>
+    <div id="load-error" role="alert" hidden></div>
+    <div class="workspace" id="workspace" hidden>
+      <section class="pool-section">
+        <div class="pool-heading"><span class="state-pill" id="state" aria-live="polite"></span><span class="version">0.1.0 · PREVIEW</span></div>
+        <div class="canvas-wrap"><canvas id="pool" width="960" height="600" tabindex="0" data-aria="ui.canvas"></canvas><div class="pause-cover" id="pause-cover" hidden><span data-t="ui.paused"></span></div></div>
+        <div class="pool-footer"><p data-t="ui.hint"></p><button id="reset" class="primary" data-t="ui.reset"></button></div>
+        <div class="shot-stats"><div><span data-t="ui.collisions"></span><strong id="collision-count">0</strong></div><div><span data-t="ui.duration"></span><strong id="shot-time">0.0 s</strong></div><div><span data-t="ui.speed"></span><strong id="speed">0 px/s</strong></div></div>
+      </section>
+      <aside class="sidebar">
+        <section class="setup"><h2 data-t="ui.playground"></h2><label for="layout" data-t="ui.layout"></label><select id="layout"><option value="free" data-t="layout.free"></option><option value="wall" data-t="layout.wall"></option><option value="duel" data-t="layout.duel"></option><option value="chain" data-t="layout.chain"></option><option value="corner" data-t="layout.corner"></option></select><p class="layout-note" id="layout-note"></p></section>
+        <section class="selection"><p class="eyebrow" data-t="ui.selected"></p><h2 id="selected-name"></h2><div class="power-label"><span data-t="ui.power"></span><strong id="power-value">0%</strong></div><div id="power-meter" class="power-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-aria="ui.power"><div id="power-fill"></div></div><p class="muted" data-t="ui.cancelHint"></p></section>
+        <details id="tuning"><summary data-t="ui.tuning"></summary><p class="muted" data-t="ui.tuningHint"></p><fieldset id="tuning-fields">
+          <label><span data-t="param.drag"></span><output id="drag-value"></output><input type="range" id="drag" min="0.35" max="1.6" step="0.05"></label>
+          <label><span data-t="param.bounce"></span><output id="bounce-value"></output><input type="range" id="bounce" min="0.55" max="0.99" step="0.01"></label>
+          <label><span data-t="param.wallBounce"></span><output id="wallBounce-value"></output><input type="range" id="wallBounce" min="0.55" max="0.99" step="0.01"></label>
+          <label><span data-t="param.maxSpeed"></span><output id="maxSpeed-value"></output><input type="range" id="maxSpeed" min="800" max="2200" step="50"></label>
+          <label><span data-t="param.mass"></span><output id="mass-value"></output><input type="range" id="mass" min="0.5" max="3.5" step="0.25"></label>
+          <button id="defaults" type="button" class="secondary" data-t="ui.defaults"></button>
+        </fieldset></details>
+        <p class="prototype-note" data-t="ui.placeholder"></p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

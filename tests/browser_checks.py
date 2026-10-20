@@ -17,7 +17,6 @@ def snapshot(page):
 
 
 def ring_point(page, ring_id=0):
-    page.locator("#pool").scroll_into_view_if_needed()
     ring = next(ring for ring in snapshot(page)["rings"] if ring["id"] == ring_id)
     bounds = page.locator("#pool").bounding_box()
     return (
@@ -47,6 +46,23 @@ def set_slider(page, selector, value):
     )
 
 
+def assert_viewport_fit(page):
+    viewport = page.viewport_size
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert page.evaluate("document.documentElement.scrollHeight <= innerHeight + 1")
+    pool = page.locator("#pool").bounding_box()
+    controls = page.locator(".controls").bounding_box()
+    assert pool["width"] > 100 and pool["height"] > 60
+    assert abs(pool["width"] / pool["height"] - 1.6) < 0.01
+    assert pool["y"] >= 0 and pool["y"] + pool["height"] <= controls["y"]
+    assert controls["y"] + controls["height"] <= viewport["height"] + 1
+    for selector in ["#layout", "#reset", "#show-tuning", "#show-art"]:
+        bounds = page.locator(selector).bounding_box()
+        assert bounds["x"] >= 0 and bounds["y"] >= 0
+        assert bounds["x"] + bounds["width"] <= viewport["width"] + 1
+        assert bounds["y"] + bounds["height"] <= viewport["height"] + 1
+
+
 def run(url):
     artifacts = ROOT / "tests" / "artifacts"
     artifacts.mkdir(exist_ok=True)
@@ -67,15 +83,13 @@ def run(url):
             assert len(snapshot(page)["rings"]) == 3
             assert snapshot(page)["art"]["loaded"]
             assert snapshot(page)["art"]["frameCount"] == 3
-            pool_bounds = page.locator("#pool").bounding_box()
-            controls_bounds = page.locator(".controls").bounding_box()
-            assert pool_bounds["width"] >= 1360 * 0.95
-            assert controls_bounds["y"] >= pool_bounds["y"] + pool_bounds["height"]
+            assert_viewport_fit(page)
             assert snapshot(page)["art"]["collisionRadius"] == 40
             page.screenshot(path=str(artifacts / "desktop-idle.png"), full_page=True)
-            checks.append("desktop load, full-width pool, controls below, matching enlarged collision radius")
+            checks.append("desktop load, complete pool and bottom controls fit the viewport without scrolling")
 
             original = snapshot(page)["rings"]
+            page.click("#show-art")
             page.click('[data-pose="1"]')
             assert snapshot(page)["art"]["previewFrame"] == 1
             assert snapshot(page)["rings"] == original
@@ -83,6 +97,8 @@ def run(url):
             page.click('[data-pose="2"]')
             page.locator("#character-preview").screenshot(path=str(artifacts / "juzi-rebound-preview.png"))
             page.click('[data-pose="0"]')
+            page.click('[data-close="art-dialog"]')
+            assert_viewport_fit(page)
             other_x, other_y, _ = ring_point(page, 1)
             page.mouse.click(other_x, other_y)
             x, y, scale = ring_point(page)
@@ -121,7 +137,9 @@ def run(url):
 
             page.select_option("#layout", "chain")
             launch(page)
+            page.click("#show-tuning")
             assert page.locator("#drag").is_disabled()
+            page.keyboard.press("Escape")
             assert not page.locator("#reset").is_disabled()
             page.wait_for_timeout(350)
             page.screenshot(path=str(artifacts / "desktop-shot.png"), full_page=True)
@@ -140,7 +158,7 @@ def run(url):
             assert not after["moving"] and after["elapsed"] == 0 and after["collisions"] == 0
             checks.append("reset during motion removes old shot")
 
-            page.locator("#tuning summary").click()
+            page.click("#show-tuning")
             page.check("#show-hitboxes")
             assert snapshot(page)["art"]["showBoundaries"]
             page.screenshot(path=str(artifacts / "collision-outlines.png"), full_page=True)
@@ -152,10 +170,12 @@ def run(url):
             page.click("#defaults")
             assert snapshot(page)["params"]["drag"] == 0.8
             assert all(ring["mass"] == 1 for ring in snapshot(page)["rings"])
+            page.click('[data-close="tuning-dialog"]')
             for locale in ["en", "ja", "ko", "ru", "es", "pt", "zh-TW", "zh-CN"]:
                 page.select_option("#language", locale)
                 page.wait_for_function("locale => document.documentElement.lang === locale", arg=locale)
                 assert not page.locator("#language").is_disabled()
+                assert_viewport_fit(page)
             checks.append("tuning, default restore, all eight locales")
 
             page.select_option("#layout", "wall")
@@ -175,13 +195,19 @@ def run(url):
             assert not snapshot(page)["suspended"]
             checks.append("visibility pause/resume and back-forward-cache lifecycle")
 
+            for width, height in [(1366, 768), (1280, 720), (1024, 600), (872, 856), (800, 600), (640, 480), (844, 390), (390, 844)]:
+                page.set_viewport_size({"width": width, "height": height})
+                page.wait_for_timeout(80)
+                assert_viewport_fit(page)
+                page.screenshot(path=str(artifacts / f"viewport-{width}x{height}.png"))
             page.set_viewport_size({"width": 520, "height": 900})
             launch(page, pull_x=120, pull_y=30)
             page.click("#reset")
             assert not snapshot(page)["moving"]
             page.screenshot(path=str(artifacts / "compact-idle.png"), full_page=True)
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
-            checks.append("resize, scaled pointer coordinates, no horizontal overflow")
+            assert_viewport_fit(page)
+            checks.append("eight viewport sizes: full map, bottom controls and reset visible without scrolling; scaled input works")
 
             mobile_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
             mobile = mobile_context.new_page()
@@ -196,7 +222,7 @@ def run(url):
             mobile.wait_for_function("window.miaoPlayground.snapshot().moving")
             mobile.click("#reset")
             mobile.screenshot(path=str(artifacts / "mobile-idle.png"), full_page=True)
-            assert mobile.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            assert_viewport_fit(mobile)
             checks.append("real touch drag at phone viewport")
             mobile_context.close()
 

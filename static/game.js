@@ -103,6 +103,7 @@
     $('selected-name').style.color = colors[selected].dark;
     $('layout-note').textContent = I.t(`note.${world.layout}`);
     $('juzi-card').hidden = selected !== 0;
+    $('show-art').disabled = selected !== 0;
     $('art-note').textContent = I.t(art ? 'ui.artNote' : 'ui.artMissing');
     drawPreview();
     updateStatus();
@@ -355,6 +356,12 @@
     listen(window, 'pageshow', () => { if (!destroyed) suspend(document.hidden); });
     listen($('reset'), 'click', reset);
     listen($('layout'), 'change', reset);
+    for (const [button, panel] of [['show-art', 'art-dialog'], ['show-tuning', 'tuning-dialog']]) {
+      listen($(button), 'click', () => { cancelAim(); $(panel).showModal(); });
+    }
+    document.querySelectorAll('[data-close]').forEach(button => listen(button, 'click', () => {
+      $(button.dataset.close).close();
+    }));
     document.querySelectorAll('[data-pose]').forEach(button => listen(button, 'click', () => {
       previewFrame = Number(button.dataset.pose);
       drawPreview();

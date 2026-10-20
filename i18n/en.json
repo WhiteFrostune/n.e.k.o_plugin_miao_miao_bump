@@ -52,5 +52,6 @@
   "pose.rebound": "Rebound",
   "ui.artNote": "Launch by pulling the character or ring. The ring edge defines collisions.",
   "ui.artMissing": "The character image is unavailable. Placeholder play is still available.",
-  "ui.boundaries": "Show ring collision outlines"
+  "ui.boundaries": "Show ring collision outlines",
+  "ui.close": "Close"
 }

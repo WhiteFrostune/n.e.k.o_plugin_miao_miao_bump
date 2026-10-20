@@ -52,5 +52,6 @@
   "pose.rebound": "Rebote",
   "ui.artNote": "Puxe a personagem ou a boia para lançar. A borda da boia define a colisão.",
   "ui.artMissing": "A imagem não carregou. Você ainda pode jogar com a boia provisória.",
-  "ui.boundaries": "Mostrar limites de colisão"
+  "ui.boundaries": "Mostrar limites de colisão",
+  "ui.close": "Fechar"
 }

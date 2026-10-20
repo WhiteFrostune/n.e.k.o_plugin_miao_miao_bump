@@ -52,5 +52,6 @@
   "pose.rebound": "Rebote",
   "ui.artNote": "Tira del personaje o flotador para lanzar. El borde del flotador determina el choque.",
   "ui.artMissing": "La imagen no está disponible. Puedes seguir con el flotador provisional.",
-  "ui.boundaries": "Mostrar límites de colisión"
+  "ui.boundaries": "Mostrar límites de colisión",
+  "ui.close": "Cerrar"
 }

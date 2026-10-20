@@ -52,5 +52,6 @@
   "pose.rebound": "回弹",
   "ui.artNote": "可以点角色或泳圈发射；实际碰撞以泳圈外缘为准。",
   "ui.artMissing": "角色图暂未加载，仍可使用占位泳圈试玩。",
-  "ui.boundaries": "显示泳圈碰撞范围"
+  "ui.boundaries": "显示泳圈碰撞范围",
+  "ui.close": "关闭"
 }

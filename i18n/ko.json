@@ -52,5 +52,6 @@
   "pose.rebound": "반동",
   "ui.artNote": "캐릭터나 튜브를 당겨 발사하세요. 충돌은 튜브 바깥쪽을 기준으로 합니다.",
   "ui.artMissing": "캐릭터 이미지를 불러올 수 없습니다. 임시 튜브로 계속 플레이할 수 있어요.",
-  "ui.boundaries": "튜브 충돌 범위 표시"
+  "ui.boundaries": "튜브 충돌 범위 표시",
+  "ui.close": "닫기"
 }

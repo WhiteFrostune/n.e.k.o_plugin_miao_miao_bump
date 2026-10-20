@@ -52,5 +52,6 @@
   "pose.rebound": "反発",
   "ui.artNote": "キャラや浮き輪を引いて発射。衝突は浮き輪の外縁で判定します。",
   "ui.artMissing": "キャラ画像を読み込めません。仮の浮き輪で引き続き遊べます。",
-  "ui.boundaries": "浮き輪の衝突範囲を表示"
+  "ui.boundaries": "浮き輪の衝突範囲を表示",
+  "ui.close": "閉じる"
 }

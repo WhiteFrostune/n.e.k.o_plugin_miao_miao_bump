@@ -75,6 +75,14 @@ uv run pytest plugin/plugins/miao_miao_bump/tests -q
 
 当前采用 Canvas + 本地 Matter.js 0.20.0，在浏览器内完成游戏循环；游戏页面、物理引擎和资源均保留在插件目录中，游玩时不请求外部 CDN。
 
+代码风格检查在本插件仓库根目录运行，使用与 GitHub 相同的 Ruff 版本：
+
+```bash
+uvx ruff==0.12.4 check --ignore-noqa --config ruff.toml .
+```
+
+独立仓库中的 N.E.K.O 宿主导入按外部依赖分组；检查配置将源码根目录固定为本插件目录，避免在宿主仓库内开发时产生不同的导入分类。
+
 ## 仓库内容
 
 ```text

@@ -6,7 +6,6 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from fastapi import FastAPI
-
 from plugin.plugins.miao_miao_bump import MiaoMiaoBumpPlugin
 from plugin.server.routes import plugin_ui
 
@@ -30,7 +29,11 @@ async def test_startup_registers_the_playground_without_background_work() -> Non
 
 
 @pytest.mark.asyncio
-async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch) -> None:
+@pytest.mark.parametrize("javascript_mime", ["application/javascript", "text/javascript"])
+async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch, javascript_mime) -> None:
+    plugin_ui.mimetypes.init()
+    monkeypatch.setitem(plugin_ui.mimetypes.types_map, ".js", javascript_mime)
+
     async def static_dir(_plugin_id):
         return ROOT / "static"
 
@@ -50,9 +53,9 @@ async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch) ->
         for suffix, content_type in [
             ("", "text/html"),
             ("/index.html", "text/html"),
-            ("/game.js", "application/javascript"),
-            ("/physics.js", "application/javascript"),
-            ("/vendor/matter-0.20.0.min.js", "application/javascript"),
+            ("/game.js", javascript_mime),
+            ("/physics.js", javascript_mime),
+            ("/vendor/matter-0.20.0.min.js", javascript_mime),
         ]:
             response = await client.get("/plugin/miao_miao_bump/ui" + suffix)
             assert response.status_code == 200

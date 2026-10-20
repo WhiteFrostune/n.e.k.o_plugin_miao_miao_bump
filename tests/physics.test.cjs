@@ -1,6 +1,18 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const P = require('../static/physics.js');
+const Art = require('../static/art.js');
+
+test('visual recoil has bounded squash, impact/rebound phases and an idle finish', () => {
+  const hit = Art.reactionAt(0, 1);
+  assert.equal(hit.frame, 1);
+  assert.ok(hit.along >= 0.85 && hit.along < 1);
+  assert.ok(Math.abs(hit.along * hit.across - 1) < 1e-9);
+  assert.equal(Art.reactionAt(0.2, 1).frame, 2);
+  assert.deepEqual(Art.reactionAt(0.5, 1), { frame: 0, along: 1, across: 1, lean: 0 });
+  assert.equal(Art.reactionAt(0, 1, true).along, 1);
+  assert.equal(Art.reactionAt(0, 1, true).frame, 1);
+});
 
 function simulate(layout, velocity, params = {}, fps = 60) {
   const world = new P.PoolWorld(params);
@@ -58,6 +70,9 @@ test('head-on equal-mass collision transfers motion to the target', () => {
   assert.ok(b.vx > 900);
   assert.ok(Math.abs(a.vx) < 150);
   assert.ok(Math.abs(b.vy) < 1);
+  const impact = world.drainImpacts()[0];
+  assert.deepEqual(impact.ringIds.sort(), [0, 1]);
+  assert.ok(Math.abs(Math.hypot(impact.normal.x, impact.normal.y) - 1) < 1e-9);
   world.destroy();
 });
 

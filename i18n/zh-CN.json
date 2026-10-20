@@ -18,7 +18,7 @@
   "ui.tuning": "调整手感",
   "ui.tuningHint": "停稳后可以调节。刷新页面会恢复默认参数。",
   "ui.defaults": "恢复默认参数",
-  "ui.placeholder": "角色暂用泳圈占位；技能、血量和胜负将在后续加入。",
+  "ui.placeholder": "橘子已接入像素形象；布丁、奶盖暂用占位泳圈。技能与对战后续加入。",
   "state.idle": "选一只猫猫，试着弹出去",
   "state.aiming": "松手发射 · Esc 取消",
   "state.moving": "猫猫滑行中，等她们停稳",
@@ -44,5 +44,13 @@
   "character.1": "布丁",
   "character.2": "奶盖",
   "actions.open": "打开碰撞练习场",
-  "ui.loadError": "暂时无法打开练习场，请刷新页面。"
+  "ui.loadError": "暂时无法打开练习场，请刷新页面。",
+  "ui.artStudy": "橘子像素形象",
+  "ui.expression": "表情预览",
+  "pose.idle": "待机",
+  "pose.impact": "受撞",
+  "pose.rebound": "回弹",
+  "ui.artNote": "可以点角色或泳圈发射；实际碰撞以泳圈外缘为准。",
+  "ui.artMissing": "角色图暂未加载，仍可使用占位泳圈试玩。",
+  "ui.boundaries": "显示泳圈碰撞范围"
 }

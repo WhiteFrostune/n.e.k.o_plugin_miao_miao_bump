@@ -18,7 +18,7 @@
   "ui.tuning": "手応えを調整",
   "ui.tuningHint": "静止中に調整できます。再読込で初期値に戻ります。",
   "ui.defaults": "初期値に戻す",
-  "ui.placeholder": "現在は浮き輪の仮表示です。スキル・体力・対戦は今後追加予定。",
+  "ui.placeholder": "橘子のピクセル姿を追加。プリンとミルクフォームは仮表示、スキルと対戦は今後追加。",
   "state.idle": "猫を選んで弾いてみよう",
   "state.aiming": "離すと発射 · Esc で取消",
   "state.moving": "滑走中。止まるまで待ってね",
@@ -44,5 +44,13 @@
   "character.1": "プリン",
   "character.2": "ミルクフォーム",
   "actions.open": "衝突プレイグラウンドを開く",
-  "ui.loadError": "開けませんでした。ページを再読込してください。"
+  "ui.loadError": "開けませんでした。ページを再読込してください。",
+  "ui.artStudy": "橘子のピクセル姿",
+  "ui.expression": "表情プレビュー",
+  "pose.idle": "待機",
+  "pose.impact": "衝突",
+  "pose.rebound": "反発",
+  "ui.artNote": "キャラや浮き輪を引いて発射。衝突は浮き輪の外縁で判定します。",
+  "ui.artMissing": "キャラ画像を読み込めません。仮の浮き輪で引き続き遊べます。",
+  "ui.boundaries": "浮き輪の衝突範囲を表示"
 }

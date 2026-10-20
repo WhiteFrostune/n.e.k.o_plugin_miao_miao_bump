@@ -18,7 +18,7 @@
   "ui.tuning": "Ajustar movimento",
   "ui.tuningHint": "Ajuste quando parar. Recarregar restaura os padrões.",
   "ui.defaults": "Restaurar padrões",
-  "ui.placeholder": "Por enquanto são boias provisórias. Habilidades, vida e batalhas vêm depois.",
+  "ui.placeholder": "Juzi ganhou arte em pixels. Pudim e Espuminha usam boias provisórias; habilidades e batalhas vêm depois.",
   "state.idle": "Escolha uma gatinha e tente lançar",
   "state.aiming": "Solte para lançar · Esc para cancelar",
   "state.moving": "Deslizando — espere as boias pararem",
@@ -44,5 +44,13 @@
   "character.1": "Pudim",
   "character.2": "Espuminha",
   "actions.open": "Abrir área de colisões",
-  "ui.loadError": "Não foi possível abrir a área. Recarregue a página."
+  "ui.loadError": "Não foi possível abrir a área. Recarregue a página.",
+  "ui.artStudy": "Juzi em pixels",
+  "ui.expression": "Prévia das expressões",
+  "pose.idle": "Repouso",
+  "pose.impact": "Impacto",
+  "pose.rebound": "Rebote",
+  "ui.artNote": "Puxe a personagem ou a boia para lançar. A borda da boia define a colisão.",
+  "ui.artMissing": "A imagem não carregou. Você ainda pode jogar com a boia provisória.",
+  "ui.boundaries": "Mostrar limites de colisão"
 }

@@ -169,7 +169,9 @@
         this.count += 1;
         const dynamic = pair.bodyA.isStatic ? pair.bodyB : pair.bodyA;
         const support = pair.collision.supports.find(Boolean) || dynamic.position;
-        this.impacts.push({ x: support.x, y: support.y, speed: impactSpeed, wall, ringId: dynamic.plugin.ringId });
+        const ringIds = [pair.bodyA, pair.bodyB].filter(body => !body.isStatic).map(body => body.plugin.ringId);
+        this.impacts.push({ x: support.x, y: support.y, speed: impactSpeed, wall,
+          ringId: dynamic.plugin.ringId, ringIds, normal: { x: normal.x, y: normal.y } });
       }
     }
 

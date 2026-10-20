@@ -2,6 +2,7 @@
   'use strict';
   const P = window.MiaoPhysics;
   const I = window.MiaoI18n;
+  const A = window.MiaoArt;
   const $ = id => document.getElementById(id);
   const canvas = $('pool');
   const ctx = canvas.getContext('2d');
@@ -19,6 +20,11 @@
   let suspended = document.hidden;
   let effects = [];
   let trails = new Map();
+  let art = null;
+  let floatImages = [];
+  let reactions = new Map();
+  let previewFrame = 0;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const listeners = new AbortController();
   let observer;
 
@@ -51,6 +57,7 @@
     selected = 0;
     effects = [];
     trails = new Map();
+    reactions.clear();
     lastTime = 0;
     syncControls();
   }
@@ -58,7 +65,10 @@
   function pointerDown(event) {
     if (event.button !== 0 || !event.isPrimary || world.moving || suspended || drag) return;
     const point = toWorld(event);
-    const ring = world.snapshot().find(item => Math.hypot(item.x - point.x, item.y - point.y) <= P.RADIUS);
+    const rings = world.snapshot();
+    // Prefer physical floats; only then consider visible pixels on Juzi's head.
+    const ring = rings.find(item => Math.hypot(item.x - point.x, item.y - point.y) <= P.RADIUS)
+      || rings.find(item => item.id === 0 && art && art.contains(point.x - item.x, point.y - item.y));
     if (!ring) return;
     event.preventDefault();
     selected = ring.id;
@@ -76,6 +86,7 @@
     if (vector.power > 0 && world.launch(selected, vector)) {
       trails = new Map();
       effects = [];
+      reactions.clear();
     }
     syncControls();
   }
@@ -91,7 +102,25 @@
     $('selected-name').textContent = I.t(`character.${selected}`);
     $('selected-name').style.color = colors[selected].dark;
     $('layout-note').textContent = I.t(`note.${world.layout}`);
+    $('juzi-card').hidden = selected !== 0;
+    $('art-note').textContent = I.t(art ? 'ui.artNote' : 'ui.artMissing');
+    drawPreview();
     updateStatus();
+  }
+
+  function drawPreview() {
+    const preview = $('character-preview');
+    const context = preview.getContext('2d');
+    context.clearRect(0, 0, preview.width, preview.height);
+    context.save(); context.translate(96, 132); context.scale(1.7, 1.7);
+    context.imageSmoothingEnabled = false;
+    context.drawImage(floatImages[0], -28, -28, 56, 56);
+    if (art) art.draw(context, previewFrame);
+    context.restore();
+    document.querySelectorAll('[data-pose]').forEach(button => {
+      button.setAttribute('aria-pressed', Number(button.dataset.pose) === previewFrame);
+      button.disabled = !art;
+    });
   }
 
   function updateStatus() {
@@ -157,16 +186,31 @@
       ctx.lineWidth = 2; ctx.setLineDash([4, 5]);
       circle(0, 0, P.RADIUS + 8, null, '#467c9b'); ctx.setLineDash([]);
     }
-    ctx.lineWidth = 2.5;
-    circle(0, 0, P.RADIUS, palette.main, palette.dark);
-    ctx.lineWidth = 10; ctx.strokeStyle = palette.light;
-    for (let i = 0; i < 4; i += 1) {
-      ctx.beginPath(); ctx.arc(0, 0, 21, i * Math.PI / 2 + 0.12, i * Math.PI / 2 + 0.68); ctx.stroke();
+    const reaction = reactions.get(ring.id);
+    const pose = A.reactionAt(reaction ? reaction.age : 1, reaction ? reaction.strength : 0, reducedMotion);
+    const angle = reaction ? reaction.angle : 0;
+    const drawFloat = frontOnly => {
+      ctx.save(); ctx.rotate(angle); ctx.scale(pose.along, pose.across); ctx.rotate(-angle);
+      ctx.imageSmoothingEnabled = false;
+      if (frontOnly) ctx.drawImage(floatImages[ring.id], 0, 25, 32, 7, -28, 15.75, 56, 12.25);
+      else ctx.drawImage(floatImages[ring.id], -28, -28, 56, 56);
+      ctx.restore();
+    };
+    drawFloat(false);
+    if (ring.id === 0 && art) {
+      art.draw(ctx, pose.frame, pose.lean * (Math.cos(angle) >= 0 ? 1 : -1));
+      drawFloat(true);
+    } else {
+      ctx.lineWidth = 1.5; circle(0, 0, 13, '#fffaf0', palette.dark);
+      if (pose.frame === 1) {
+        ctx.strokeStyle = palette.dark; ctx.beginPath();
+        ctx.moveTo(-7, -4); ctx.lineTo(-3, -1); ctx.lineTo(-7, 2);
+        ctx.moveTo(7, -4); ctx.lineTo(3, -1); ctx.lineTo(7, 2); ctx.stroke();
+      } else {
+        circle(-4, -1, 1.6, palette.dark); circle(4, -1, 1.6, palette.dark);
+      }
+      ctx.beginPath(); ctx.moveTo(-3, 5); ctx.lineTo(0, 7); ctx.lineTo(3, 5); ctx.strokeStyle = palette.dark; ctx.stroke();
     }
-    ctx.lineWidth = 1.5; circle(0, 0, 13, '#fffaf0', palette.dark);
-    ctx.fillStyle = palette.dark;
-    circle(-4, -1, 1.6, palette.dark); circle(4, -1, 1.6, palette.dark);
-    ctx.beginPath(); ctx.moveTo(-3, 5); ctx.lineTo(0, 7); ctx.lineTo(3, 5); ctx.strokeStyle = palette.dark; ctx.stroke();
     const name = I.t(`character.${ring.id}`);
     ctx.font = '600 13px "Segoe UI", "Microsoft YaHei", sans-serif';
     const width = ctx.measureText(name).width + 20;
@@ -195,7 +239,7 @@
       ctx.lineTo(contact.x + reflected.x * length, contact.y + reflected.y * length); ctx.stroke();
     }
     ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.strokeStyle = '#3a7496'; ctx.lineWidth = 5;
-    const length = 40 + vector.power * 70;
+    const length = (selected === 0 && art ? 65 : 40) + vector.power * 70;
     const end = { x: origin.x + d.x * length, y: origin.y + d.y * length };
     ctx.beginPath(); ctx.moveTo(origin.x + d.x * 35, origin.y + d.y * 35); ctx.lineTo(end.x, end.y); ctx.stroke();
     ctx.fillStyle = '#3a7496'; ctx.beginPath(); ctx.moveTo(end.x, end.y);
@@ -217,16 +261,25 @@
     for (const effect of effects) {
       ctx.globalAlpha = Math.max(0, 1 - effect.age / 0.55);
       ctx.lineWidth = 2; circle(effect.x, effect.y, 5 + effect.age * 42, null, '#fffef6');
-      for (let i = 0; i < 5; i += 1) {
-        const angle = i * Math.PI * 0.4;
-        const distance = 7 + effect.age * 36;
-        ctx.fillStyle = '#f4ffff'; ctx.fillRect(effect.x + Math.cos(angle) * distance, effect.y + Math.sin(angle) * distance, 3, 3);
+      const strength = Math.min(1, effect.speed / 1400);
+      const drops = reducedMotion ? 3 : 4 + Math.round(strength * 4);
+      const direction = Math.atan2(effect.normal.y, effect.normal.x);
+      for (let i = 0; i < drops; i += 1) {
+        const angle = direction + Math.PI * 2 * i / drops;
+        const distance = 6 + effect.age * (reducedMotion ? 16 : 24 + 35 * strength);
+        const size = strength > 0.6 ? 4 : 3;
+        ctx.fillStyle = '#f4ffff'; ctx.fillRect(effect.x + Math.cos(angle) * distance, effect.y + Math.sin(angle) * distance, size, size);
       }
     }
     ctx.globalAlpha = 1;
     const rings = world.snapshot();
     drawAim(rings);
-    rings.forEach(drawRing);
+    rings.sort((a, b) => a.y - b.y || a.id - b.id).forEach(drawRing);
+    if ($('show-hitboxes').checked) {
+      ctx.save(); ctx.strokeStyle = '#bd526b'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      rings.forEach(ring => { circle(ring.x, ring.y, P.RADIUS, null, '#bd526b'); });
+      ctx.restore();
+    }
   }
 
   function frame(time) {
@@ -234,9 +287,19 @@
     const dt = lastTime ? Math.min(time - lastTime, 100) : 0;
     lastTime = time;
     if (!suspended) {
+      for (const [id, reaction] of reactions) {
+        reaction.age += dt / 1000;
+        if (reaction.age >= 0.48) reactions.delete(id);
+      }
       const wasMoving = world.moving;
       world.advance(dt);
-      for (const impact of world.drainImpacts()) effects.push({ ...impact, age: 0 });
+      for (const impact of world.drainImpacts()) {
+        effects.push({ ...impact, age: 0 });
+        for (const id of impact.ringIds) reactions.set(id, {
+          age: 0, strength: Math.min(1, impact.speed / 1000),
+          angle: Math.atan2(impact.normal.y, impact.normal.x),
+        });
+      }
       effects = effects.map(item => ({ ...item, age: item.age + dt / 1000 })).filter(item => item.age < 0.55).slice(-35);
       if (world.moving) {
         for (const ring of world.snapshot()) {
@@ -273,6 +336,8 @@
 
   async function boot() {
     await I.init();
+    floatImages = colors.map(A.floatImage);
+    try { art = await A.load(); } catch { /* Keep the collision playground available without the sprite. */ }
     world = new P.PoolWorld();
     $('workspace').hidden = false;
     observer = new ResizeObserver(resize); observer.observe(canvas); resize();
@@ -289,6 +354,10 @@
     listen(window, 'pageshow', () => { if (!destroyed) suspend(document.hidden); });
     listen($('reset'), 'click', reset);
     listen($('layout'), 'change', reset);
+    document.querySelectorAll('[data-pose]').forEach(button => listen(button, 'click', () => {
+      previewFrame = Number(button.dataset.pose);
+      drawPreview();
+    }));
     for (const key of Object.keys(P.DEFAULTS)) {
       listen($(key), 'input', () => { world.setParams({ [key]: Number($(key).value) }); syncControls(); });
     }
@@ -308,6 +377,11 @@
       selected, layout: world.layout, moving: world.moving, aiming: Boolean(drag), suspended,
       elapsed: world.elapsed, collisions: world.count, fault: world.fault,
       params: { ...world.params }, rings: world.snapshot(), destroyed,
+      art: {
+        loaded: Boolean(art), frameCount: art ? art.metadata.frames.length : 0, previewFrame,
+        activeFrame: A.reactionAt(reactions.get(0)?.age ?? 1).frame,
+        reactingIds: [...reactions.keys()], showBoundaries: $('show-hitboxes').checked,
+      },
     }) });
     syncControls();
     raf = requestAnimationFrame(frame);

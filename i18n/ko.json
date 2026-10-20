@@ -18,7 +18,7 @@
   "ui.tuning": "손맛 조절",
   "ui.tuningHint": "멈춘 상태에서 조절하세요. 새로 고침하면 기본값으로 돌아갑니다.",
   "ui.defaults": "기본값 복원",
-  "ui.placeholder": "지금은 임시 튜브입니다. 스킬, 체력, 대전은 추후 추가됩니다.",
+  "ui.placeholder": "쥐쯔의 픽셀 모습을 추가했습니다. 푸딩과 밀크폼은 임시 튜브이며 스킬과 대전은 추후 추가됩니다.",
   "state.idle": "고양이를 골라 발사해 보세요",
   "state.aiming": "놓으면 발사 · Esc로 취소",
   "state.moving": "미끄러지는 중 — 멈출 때까지 기다려 주세요",
@@ -44,5 +44,13 @@
   "character.1": "푸딩",
   "character.2": "밀크폼",
   "actions.open": "충돌 연습장 열기",
-  "ui.loadError": "연습장을 열 수 없습니다. 페이지를 새로 고침해 주세요."
+  "ui.loadError": "연습장을 열 수 없습니다. 페이지를 새로 고침해 주세요.",
+  "ui.artStudy": "쥐쯔 픽셀 캐릭터",
+  "ui.expression": "표정 미리보기",
+  "pose.idle": "대기",
+  "pose.impact": "충돌",
+  "pose.rebound": "반동",
+  "ui.artNote": "캐릭터나 튜브를 당겨 발사하세요. 충돌은 튜브 바깥쪽을 기준으로 합니다.",
+  "ui.artMissing": "캐릭터 이미지를 불러올 수 없습니다. 임시 튜브로 계속 플레이할 수 있어요.",
+  "ui.boundaries": "튜브 충돌 범위 표시"
 }

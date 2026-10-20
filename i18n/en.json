@@ -18,7 +18,7 @@
   "ui.tuning": "Tune the feel",
   "ui.tuningHint": "Adjust while still. Reloading restores the defaults.",
   "ui.defaults": "Restore defaults",
-  "ui.placeholder": "Placeholder rings for now. Skills, health and battles come later.",
+  "ui.placeholder": "Juzi now has pixel art. Pudding and Milkcap use placeholder rings; skills and battles come later.",
   "state.idle": "Pick a cat and try a shot",
   "state.aiming": "Release to launch · Esc to cancel",
   "state.moving": "Gliding — wait until the rings stop",
@@ -44,5 +44,13 @@
   "character.1": "Pudding",
   "character.2": "Milkcap",
   "actions.open": "Open collision playground",
-  "ui.loadError": "Unable to open the playground. Please reload this page."
+  "ui.loadError": "Unable to open the playground. Please reload this page.",
+  "ui.artStudy": "Juzi pixel character",
+  "ui.expression": "Expression preview",
+  "pose.idle": "Idle",
+  "pose.impact": "Impact",
+  "pose.rebound": "Rebound",
+  "ui.artNote": "Launch by pulling the character or ring. The ring edge defines collisions.",
+  "ui.artMissing": "The character image is unavailable. Placeholder play is still available.",
+  "ui.boundaries": "Show ring collision outlines"
 }

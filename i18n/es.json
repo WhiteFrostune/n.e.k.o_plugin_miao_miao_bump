@@ -18,7 +18,7 @@
   "ui.tuning": "Ajustar movimiento",
   "ui.tuningHint": "Ajusta en reposo. Recargar restaura los valores iniciales.",
   "ui.defaults": "Restaurar valores",
-  "ui.placeholder": "Por ahora son flotadores provisionales. Habilidades, salud y batallas llegarán después.",
+  "ui.placeholder": "Juzi ya tiene arte de píxeles. Pudin y Espumita conservan flotadores provisionales; habilidades y batallas llegarán después.",
   "state.idle": "Elige una gatita y prueba un tiro",
   "state.aiming": "Suelta para lanzar · Esc para cancelar",
   "state.moving": "Deslizándose: espera a que se detengan",
@@ -44,5 +44,13 @@
   "character.1": "Pudin",
   "character.2": "Espumita",
   "actions.open": "Abrir zona de colisiones",
-  "ui.loadError": "No se pudo abrir la zona. Recarga la página."
+  "ui.loadError": "No se pudo abrir la zona. Recarga la página.",
+  "ui.artStudy": "Juzi en píxeles",
+  "ui.expression": "Vista de expresiones",
+  "pose.idle": "Reposo",
+  "pose.impact": "Impacto",
+  "pose.rebound": "Rebote",
+  "ui.artNote": "Tira del personaje o flotador para lanzar. El borde del flotador determina el choque.",
+  "ui.artMissing": "La imagen no está disponible. Puedes seguir con el flotador provisional.",
+  "ui.boundaries": "Mostrar límites de colisión"
 }

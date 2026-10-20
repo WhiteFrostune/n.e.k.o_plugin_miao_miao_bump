@@ -2,7 +2,10 @@
 
 import argparse
 import json
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
 
 from playwright.sync_api import sync_playwright
 
@@ -14,6 +17,7 @@ def snapshot(page):
 
 
 def ring_point(page, ring_id=0):
+    page.locator("#pool").scroll_into_view_if_needed()
     ring = next(ring for ring in snapshot(page)["rings"] if ring["id"] == ring_id)
     bounds = page.locator("#pool").bounding_box()
     return (
@@ -33,7 +37,7 @@ def aim(page, ring_id=0, pull_x=180, pull_y=0):
 def launch(page, ring_id=0, pull_x=180, pull_y=0):
     aim(page, ring_id, pull_x, pull_y)
     page.mouse.up()
-    page.wait_for_function("window.miaoPlayground.snapshot().moving")
+    page.wait_for_function("window.miaoPlayground.snapshot().moving", timeout=3000)
 
 
 def set_slider(page, selector, value):
@@ -61,8 +65,23 @@ def run(url):
             page.wait_for_function("Boolean(window.miaoPlayground)")
             assert page.locator("h1").inner_text() == "喵喵碰碰大作战"
             assert len(snapshot(page)["rings"]) == 3
+            assert snapshot(page)["art"]["loaded"]
+            assert snapshot(page)["art"]["frameCount"] == 3
             page.screenshot(path=str(artifacts / "desktop-idle.png"), full_page=True)
             checks.append("desktop load, local resources, Chinese labels")
+
+            original = snapshot(page)["rings"]
+            page.click('[data-pose="1"]')
+            assert snapshot(page)["art"]["previewFrame"] == 1
+            assert snapshot(page)["rings"] == original
+            page.locator("#character-preview").screenshot(path=str(artifacts / "juzi-impact-preview.png"))
+            page.click('[data-pose="2"]')
+            page.locator("#character-preview").screenshot(path=str(artifacts / "juzi-rebound-preview.png"))
+            page.click('[data-pose="0"]')
+            x, y, scale = ring_point(page)
+            page.mouse.click(x, y - 40 * scale)
+            assert snapshot(page)["selected"] == 0 and not snapshot(page)["moving"]
+            checks.append("three sprite frames, independent expression preview and visible head selection")
 
             x, y, _ = ring_point(page, 1)
             page.mouse.click(x, y)
@@ -83,6 +102,15 @@ def run(url):
             page.mouse.up()
             assert not snapshot(page)["moving"]
             checks.append("click selection, Escape, context-menu and pointer-cancel")
+
+            page.select_option("#layout", "duel")
+            launch(page)
+            page.wait_for_function("window.miaoPlayground.snapshot().art.activeFrame === 1", polling="raf")
+            assert set(snapshot(page)["art"]["reactingIds"]) == {0, 1}
+            page.wait_for_function("window.miaoPlayground.snapshot().art.activeFrame === 2", polling="raf")
+            page.click("#reset")
+            assert snapshot(page)["art"]["activeFrame"] == 0
+            checks.append("collision drives impact/rebound on both floats; reset clears reactions")
 
             page.select_option("#layout", "chain")
             launch(page)
@@ -106,6 +134,10 @@ def run(url):
             checks.append("reset during motion removes old shot")
 
             page.locator("#tuning summary").click()
+            page.check("#show-hitboxes")
+            assert snapshot(page)["art"]["showBoundaries"]
+            page.screenshot(path=str(artifacts / "collision-outlines.png"), full_page=True)
+            page.uncheck("#show-hitboxes")
             set_slider(page, "#drag", "1.2")
             set_slider(page, "#mass", "2.5")
             assert snapshot(page)["params"]["drag"] == 1.2
@@ -167,6 +199,15 @@ def run(url):
             assert not errors, errors
             assert not external, external
             checks.append("page cleanup, no browser errors, no external requests")
+            fallback = context.new_page()
+            fallback.route("**/assets/juzi-expressions.png", lambda route: route.abort())
+            fallback.goto(url + "?locale=zh-CN")
+            fallback.wait_for_function("Boolean(window.miaoPlayground)")
+            assert not snapshot(fallback)["art"]["loaded"]
+            launch(fallback)
+            fallback.click("#reset")
+            fallback.close()
+            checks.append("sprite-load failure preserves placeholder play")
             context.close()
         finally:
             browser.close()
@@ -177,6 +218,21 @@ def run(url):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--url", default="http://127.0.0.1:48922/static/index.html")
+    parser.add_argument("--url", help="Existing preview URL; omit to use a temporary localhost server")
     args = parser.parse_args()
-    run(args.url)
+    if args.url:
+        run(args.url)
+    else:
+        class QuietHandler(SimpleHTTPRequestHandler):
+            def log_message(self, *_):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), partial(QuietHandler, directory=str(ROOT)))
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            run(f"http://127.0.0.1:{server.server_port}/static/index.html")
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)

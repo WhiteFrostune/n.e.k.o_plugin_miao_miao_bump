@@ -43,6 +43,13 @@ canvas.moving { cursor: default; }
 .layout-note { color: #8295a1; font-size: 12px; line-height: 1.7; min-height: 40px; margin: 12px 0 0; }
 .selection { margin: 22px 0; padding-top: 22px; border-top: 1px solid #dde6ea; }
 .selection h2 { margin-bottom: 18px; font-size: 22px; }
+#character-preview { width: 160px; height: 160px; margin: -12px auto 4px; image-rendering: pixelated; background: #e8f3f5; border-radius: 12px; cursor: default; }
+.pose-buttons { display: flex; gap: 5px; }
+.pose-buttons button { flex: 1; padding: 7px 3px; border-radius: 6px; background: #e8eff2; color: #6e8494; font-size: 11px; }
+.pose-buttons button[aria-pressed="true"] { background: #fbe7c4; color: #9d7035; }
+#art-note { margin-bottom: 18px; }
+.boundary-control { display: flex; align-items: center; gap: 7px; margin-top: 14px; font-size: 11px; color: #728b9b; }
+.boundary-control input { accent-color: #579bb9; }
 .power-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px; }
 .power-label strong { font-weight: 600; color: #6897af; }
 .power-meter { height: 7px; background: #e1e9ee; border-radius: 4px; overflow: hidden; }
@@ -60,3 +67,4 @@ fieldset:disabled { opacity: .5; }
 @media (max-width: 1000px) { .app { padding: 22px; } .workspace { grid-template-columns: minmax(0, 1fr) 220px; gap: 20px; } .shot-stats { gap: 20px; flex-wrap: wrap; } }
 @media (max-width: 740px) { .app { padding: 16px 12px; } .topbar { align-items: flex-start; margin-bottom: 18px; } .brand-icon { display: none; } .language > span { display: none; } .language select { max-width: 105px; font-size: 12px; } .workspace { display: block; } .sidebar { padding-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .sidebar .selection { margin: 0; padding-top: 0; border: 0; } details, .prototype-note { grid-column: 1 / -1; } .prototype-note { margin-top: 0; } h1 { font-size: 20px; } .pool-footer { align-items: flex-start; } .pool-footer p { font-size: 11px; } .shot-stats { justify-content: space-between; gap: 12px; } .shot-stats > div { display: grid; gap: 4px; } }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+@media (max-width: 740px) { #character-preview { width: 130px; height: 130px; } .pose-buttons { flex-wrap: wrap; } }

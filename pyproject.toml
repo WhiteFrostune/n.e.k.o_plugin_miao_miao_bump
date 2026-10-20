@@ -1,6 +1,6 @@
 [project]
 name = "miao_miao_bump"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 description = "A catgirl swimming-ring collision game plugin for N.E.K.O."
 authors = [{ name = "WhiteFrostune" }]
 dependencies = []

@@ -67,8 +67,13 @@ def run(url):
             assert len(snapshot(page)["rings"]) == 3
             assert snapshot(page)["art"]["loaded"]
             assert snapshot(page)["art"]["frameCount"] == 3
+            pool_bounds = page.locator("#pool").bounding_box()
+            controls_bounds = page.locator(".controls").bounding_box()
+            assert pool_bounds["width"] >= 1360 * 0.95
+            assert controls_bounds["y"] >= pool_bounds["y"] + pool_bounds["height"]
+            assert snapshot(page)["art"]["collisionRadius"] == 40
             page.screenshot(path=str(artifacts / "desktop-idle.png"), full_page=True)
-            checks.append("desktop load, local resources, Chinese labels")
+            checks.append("desktop load, full-width pool, controls below, matching enlarged collision radius")
 
             original = snapshot(page)["rings"]
             page.click('[data-pose="1"]')
@@ -78,8 +83,10 @@ def run(url):
             page.click('[data-pose="2"]')
             page.locator("#character-preview").screenshot(path=str(artifacts / "juzi-rebound-preview.png"))
             page.click('[data-pose="0"]')
+            other_x, other_y, _ = ring_point(page, 1)
+            page.mouse.click(other_x, other_y)
             x, y, scale = ring_point(page)
-            page.mouse.click(x, y - 40 * scale)
+            page.mouse.click(x, y - 65 * scale)
             assert snapshot(page)["selected"] == 0 and not snapshot(page)["moving"]
             checks.append("three sprite frames, independent expression preview and visible head selection")
 

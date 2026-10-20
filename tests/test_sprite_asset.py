@@ -29,4 +29,5 @@ def test_juzi_frames_have_transparency_and_do_not_crop_opaque_pixels() -> None:
             assert bounds[2] < frame["width"] and bounds[3] < frame["height"]
             previous_right = right
     assert [frame["name"] for frame in metadata["frames"]] == ["idle", "impact", "rebound"]
-    assert metadata["collisionRadius"] == 28
+    assert metadata["collisionRadius"] == 40
+    assert metadata["pixelGrid"] == {"width": 48, "height": 56}

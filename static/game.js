@@ -112,9 +112,9 @@
     const preview = $('character-preview');
     const context = preview.getContext('2d');
     context.clearRect(0, 0, preview.width, preview.height);
-    context.save(); context.translate(96, 132); context.scale(1.7, 1.7);
+    context.save(); context.translate(96, 128); context.scale(1.25, 1.25);
     context.imageSmoothingEnabled = false;
-    context.drawImage(floatImages[0], -28, -28, 56, 56);
+    context.drawImage(floatImages[0], -P.RADIUS, -P.RADIUS, P.RADIUS * 2, P.RADIUS * 2);
     if (art) art.draw(context, previewFrame);
     context.restore();
     document.querySelectorAll('[data-pose]').forEach(button => {
@@ -180,7 +180,7 @@
 
   function drawRing(ring) {
     const palette = colors[ring.id];
-    ctx.save(); ctx.translate(ring.x, ring.y);
+    ctx.save(); ctx.translate(Math.round(ring.x / 2) * 2, Math.round(ring.y / 2) * 2);
     circle(0, 6, P.RADIUS + 2, '#39799225');
     if (ring.id === selected && !world.moving) {
       ctx.lineWidth = 2; ctx.setLineDash([4, 5]);
@@ -192,8 +192,9 @@
     const drawFloat = frontOnly => {
       ctx.save(); ctx.rotate(angle); ctx.scale(pose.along, pose.across); ctx.rotate(-angle);
       ctx.imageSmoothingEnabled = false;
-      if (frontOnly) ctx.drawImage(floatImages[ring.id], 0, 25, 32, 7, -28, 15.75, 56, 12.25);
-      else ctx.drawImage(floatImages[ring.id], -28, -28, 56, 56);
+      if (frontOnly) ctx.drawImage(floatImages[ring.id], 0, 25, 32, 7,
+        -P.RADIUS, P.RADIUS * 0.5625, P.RADIUS * 2, P.RADIUS * 0.4375);
+      else ctx.drawImage(floatImages[ring.id], -P.RADIUS, -P.RADIUS, P.RADIUS * 2, P.RADIUS * 2);
       ctx.restore();
     };
     drawFloat(false);
@@ -214,8 +215,8 @@
     const name = I.t(`character.${ring.id}`);
     ctx.font = '600 13px "Segoe UI", "Microsoft YaHei", sans-serif';
     const width = ctx.measureText(name).width + 20;
-    roundRect(-width / 2, 37, width, 23, 7, '#f9ffffe8');
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = palette.dark; ctx.fillText(name, 0, 49);
+    roundRect(-width / 2, P.RADIUS + 9, width, 23, 7, '#f9ffffe8');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = palette.dark; ctx.fillText(name, 0, P.RADIUS + 21);
     ctx.restore();
   }
 
@@ -239,9 +240,9 @@
       ctx.lineTo(contact.x + reflected.x * length, contact.y + reflected.y * length); ctx.stroke();
     }
     ctx.setLineDash([]); ctx.globalAlpha = 1; ctx.strokeStyle = '#3a7496'; ctx.lineWidth = 5;
-    const length = (selected === 0 && art ? 65 : 40) + vector.power * 70;
+    const length = (selected === 0 && art ? 96 : P.RADIUS + 15) + vector.power * 70;
     const end = { x: origin.x + d.x * length, y: origin.y + d.y * length };
-    ctx.beginPath(); ctx.moveTo(origin.x + d.x * 35, origin.y + d.y * 35); ctx.lineTo(end.x, end.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(origin.x + d.x * (P.RADIUS + 7), origin.y + d.y * (P.RADIUS + 7)); ctx.lineTo(end.x, end.y); ctx.stroke();
     ctx.fillStyle = '#3a7496'; ctx.beginPath(); ctx.moveTo(end.x, end.y);
     ctx.lineTo(end.x - d.x * 12 - d.y * 7, end.y - d.y * 12 + d.x * 7);
     ctx.lineTo(end.x - d.x * 12 + d.y * 7, end.y - d.y * 12 - d.x * 7); ctx.closePath(); ctx.fill();
@@ -379,6 +380,7 @@
       params: { ...world.params }, rings: world.snapshot(), destroyed,
       art: {
         loaded: Boolean(art), frameCount: art ? art.metadata.frames.length : 0, previewFrame,
+        pixelGrid: art ? art.metadata.pixelGrid : null, collisionRadius: P.RADIUS,
         activeFrame: A.reactionAt(reactions.get(0)?.age ?? 1).frame,
         reactingIds: [...reactions.keys()], showBoundaries: $('show-hitboxes').checked,
       },

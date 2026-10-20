@@ -11,7 +11,7 @@
   const { Engine, Bodies, Body, Composite, Events } = Matter;
   const WIDTH = 960;
   const HEIGHT = 600;
-  const RADIUS = 28;
+  const RADIUS = 40;
   const BOUNDS = Object.freeze({ left: 44, top: 44, right: 916, bottom: 556 });
   const STEP_MS = 1000 / 240;
   const STOP_SPEED = 12;
@@ -22,7 +22,7 @@
     wall: [[300, 300]],
     duel: [[260, 300], [615, 300]],
     chain: [[220, 300], [480, 300], [735, 300]],
-    corner: [[74, 74], [132, 74], [74, 132]],
+    corner: [[86, 86], [168, 86], [86, 168]],
   });
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 

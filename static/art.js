@@ -48,32 +48,38 @@
     const image = new Image();
     image.src = new URL(metadata.image, metadataUrl).href;
     await image.decode();
-    const mask = document.createElement('canvas');
-    mask.width = image.width; mask.height = image.height;
-    const context = mask.getContext('2d', { willReadFrequently: true });
-    context.drawImage(image, 0, 0);
-    const pixels = context.getImageData(0, 0, mask.width, mask.height).data;
     const box = metadata.drawBox;
+    // Sample once onto the character's game grid, then enlarge whole pixels.
+    // Keeping this separate from the high-DPI screen avoids tiny source details.
+    const frames = metadata.frames.map(frame => {
+      const sprite = document.createElement('canvas');
+      sprite.width = metadata.pixelGrid.width; sprite.height = metadata.pixelGrid.height;
+      const target = sprite.getContext('2d');
+      target.imageSmoothingEnabled = false;
+      target.drawImage(image, frame.x, frame.y, frame.width, frame.height, 0, 0, sprite.width, sprite.height);
+      const sampled = target.getImageData(0, 0, sprite.width, sprite.height);
+      for (let i = 3; i < sampled.data.length; i += 4) sampled.data[i] = sampled.data[i] < 128 ? 0 : 255;
+      target.putImageData(sampled, 0, 0);
+      return sprite;
+    });
+    const hitPixels = frames[0].getContext('2d').getImageData(0, 0, frames[0].width, frames[0].height).data;
 
     return {
       metadata,
       draw(context, frameIndex = 0, lean = 0) {
-        const frame = metadata.frames[frameIndex] || metadata.frames[0];
+        const frame = frames[frameIndex] || frames[0];
         context.save();
         context.imageSmoothingEnabled = false;
-        // The hands remain near the float; the head has a small visual recoil.
-        context.translate(0, 10);
-        context.rotate(lean);
-        context.drawImage(image, frame.x, frame.y, frame.width, frame.height,
-          box.x, box.y - 10, box.width, box.height);
+        // Pixel-grid translations keep the silhouette crisp while reacting.
+        context.translate(Math.round(lean * 24) * 2, 0);
+        context.drawImage(frame, box.x, box.y, box.width, box.height);
         context.restore();
       },
       contains(x, y) {
         if (x < box.x || y < box.y || x >= box.x + box.width || y >= box.y + box.height) return false;
-        const frame = metadata.frames[0];
-        const sourceX = Math.floor(frame.x + (x - box.x) / box.width * frame.width);
-        const sourceY = Math.floor(frame.y + (y - box.y) / box.height * frame.height);
-        return pixels[(sourceY * image.width + sourceX) * 4 + 3] > 128;
+        const sourceX = Math.floor((x - box.x) / box.width * frames[0].width);
+        const sourceY = Math.floor((y - box.y) / box.height * frames[0].height);
+        return hitPixels[(sourceY * frames[0].width + sourceX) * 4 + 3] > 128;
       },
     };
   }

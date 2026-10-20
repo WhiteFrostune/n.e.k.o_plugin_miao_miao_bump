@@ -1,4 +1,6 @@
 {
+  "map.summerPool": "Piscina de verão",
+  "map.fallback": "Mapa indisponível. Usando a piscina padrão.",
   "plugin.name": "Miau Miau: batalha de boias",
   "plugin.description": "Área de física com garotas-gato em boias: lançamento por arrasto, resistência da água e rebotes ajustáveis.",
   "ui.prototype": "Batalha de gatas na piscina",

@@ -9,11 +9,10 @@
     Object.freeze({ key: 'pudding', hp: 85, attack: 18, mass: 1, wallBonus: 0.07 }),
     Object.freeze({ key: 'milkcap', hp: 100, attack: 20, mass: 1, wallBonus: 0 }),
   ]);
-  const START = [[200, 160], [300, 300], [200, 440], [760, 160], [660, 300], [760, 440]];
-
   class Match {
-    constructor() {
-      this.world = new P.PoolWorld();
+    constructor(options = {}) {
+      this.world = new P.PoolWorld(options);
+      this.map = this.world.map;
       this.world.onContact = contact => this.handleContact(contact);
       this.reset();
     }
@@ -25,7 +24,7 @@
       this.winner = null;
       this.activeId = null;
       this.events = [];
-      this.actors = START.map(([x, y], id) => {
+      this.actors = this.map.spawns.flat().map(({ x, y }, id) => {
         const role = id % 3;
         const stats = ROLES[role];
         return { id, role, team: id < 3 ? 0 : 1, hp: stats.hp, maxHp: stats.hp,
@@ -101,7 +100,7 @@
 
     snapshot() {
       const rings = this.world.snapshot();
-      return { side: this.side, turn: this.turn, phase: this.phase, winner: this.winner, activeId: this.activeId,
+      return { side: this.side, turn: this.turn, phase: this.phase, winner: this.winner, activeId: this.activeId, map: this.map,
         actors: this.actors.map(cat => ({ ...cat, ...rings.find(ring => ring.id === cat.id) })) };
     }
 
@@ -117,8 +116,10 @@
     const friends = cats.filter(cat => cat.team === state.side);
     const opponents = cats.filter(cat => cat.team !== state.side);
     if (state.phase !== 'ready' || !friends.length || !opponents.length) return null;
-    const lowX = P.BOUNDS.left + P.RADIUS, highX = P.BOUNDS.right - P.RADIUS;
-    const lowY = P.BOUNDS.top + P.RADIUS, highY = P.BOUNDS.bottom - P.RADIUS;
+    const map = state.map;
+    const bounds = map ? map.world.bounds : P.BOUNDS;
+    const lowX = bounds.left + P.RADIUS, highX = bounds.right - P.RADIUS;
+    const lowY = bounds.top + P.RADIUS, highY = bounds.bottom - P.RADIUS;
     let best = null;
     for (const cat of friends) for (const target of opponents) {
       const images = [[target.x, target.y], [2 * lowX - target.x, target.y],
@@ -126,7 +127,7 @@
       for (const [x, y] of images) for (const offset of [0, -0.09, 0.09]) for (const power of [0.6, 0.8, 1]) {
         const angle = Math.atan2(y - cat.y, x - cat.x) + offset;
         const direction = { x: Math.cos(angle), y: Math.sin(angle) };
-        let hit = P.firstContact(cat, direction, cats, cat.id);
+        let hit = P.firstContact(cat, direction, cats, cat.id, map);
         if (!hit) continue;
         let distance = hit.distance;
         let speed = params.maxSpeed * power / Math.sqrt(cat.mass);
@@ -136,7 +137,7 @@
           const dot = direction.x * hit.normal.x + direction.y * hit.normal.y;
           const reflected = { x: direction.x - 2 * dot * hit.normal.x, y: direction.y - 2 * dot * hit.normal.y };
           const start = { x: hit.x + reflected.x * 0.1, y: hit.y + reflected.y * 0.1 };
-          hit = P.firstContact(start, reflected, cats, cat.id);
+          hit = P.firstContact(start, reflected, cats, cat.id, map);
           if (!hit) continue;
           wallBonus = cat.role === 1 ? 2 : 0;
         }

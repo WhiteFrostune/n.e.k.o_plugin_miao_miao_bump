@@ -14,6 +14,7 @@
   </script>
   <link rel="stylesheet" href="style.css">
   <script defer src="vendor/matter-0.20.0.min.js"></script>
+  <script defer src="maps.js"></script>
   <script defer src="physics.js"></script>
   <script defer src="battle.js"></script>
   <script defer src="art.js"></script>
@@ -30,9 +31,9 @@
     <div id="load-error" role="alert" hidden></div>
     <div class="workspace" id="workspace" hidden>
       <section class="pool-section">
-        <div class="pool-heading"><span class="state-pill" id="state" aria-live="polite"></span><span id="team-status" class="team-status"></span><span class="version">0.1.0.dev8</span></div>
+        <div class="pool-heading"><span class="state-pill" id="state" aria-live="polite"></span><span id="team-status" class="team-status"></span><span class="version">0.1.0.dev9</span></div>
         <div class="stage-slot"><div class="canvas-wrap"><canvas id="pool" width="960" height="600" tabindex="0" data-aria="ui.canvas"></canvas><div class="pause-cover" id="pause-cover" hidden><span data-t="ui.paused"></span></div></div></div>
-        <div class="pool-footer"><p id="play-hint" data-t="ui.hint"></p><div class="footer-actions"><button id="sound-toggle" class="secondary" type="button" aria-pressed="true"></button><button id="reset" class="primary" data-t="ui.reset"></button></div></div>
+        <div class="pool-footer"><p id="play-hint" data-t="ui.hint"></p><p id="map-note" role="status" data-t="map.fallback" hidden></p><div class="footer-actions"><button id="sound-toggle" class="secondary" type="button" aria-pressed="true"></button><button id="reset" class="primary" data-t="ui.reset"></button></div></div>
       </section>
       <section class="controls" data-aria="ui.tuning">
         <section class="setup"><label for="game-mode" data-t="ui.mode"></label><select id="game-mode"><option value="battle" data-t="mode.battle"></option><option value="practice" data-t="mode.practice"></option></select></section>

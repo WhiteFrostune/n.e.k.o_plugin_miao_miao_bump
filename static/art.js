@@ -84,19 +84,34 @@
     };
   }
 
-  async function loadPool(bounds, width, height) {
-    const metadataUrl = new URL('assets/summer-pool.json', document.baseURI);
+  async function loadPool(definition) {
+    if (!definition.art) throw new Error('Map uses procedural art');
+    const { bounds, width, height } = definition.world;
+    const metadataUrl = new URL(definition.art.metadata, document.baseURI);
     const response = await fetch(metadataUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error('Pool metadata unavailable');
     const metadata = await response.json();
     const image = new Image();
     image.src = new URL(metadata.image, metadataUrl).href;
     await image.decode();
+    const grid = metadata.pixelGrid;
+    const slices = metadata.sourceSlices;
+    const water = metadata.waterTexture;
+    if (!grid || ![grid.width, grid.height].every(n => Number.isInteger(n) && n > 0 && n <= 2048)
+      || !slices || ![slices.left, slices.right, slices.top, slices.bottom].every(Number.isFinite)
+      || slices.left <= 0 || slices.left >= slices.right || slices.right >= image.naturalWidth
+      || slices.top <= 0 || slices.top >= slices.bottom || slices.bottom >= image.naturalHeight
+      || !water || ![water.x, water.y, water.width, water.height].every(Number.isFinite)
+      || water.x < 0 || water.y < 0 || water.width <= 0 || water.height <= 0
+      || water.x + water.width > image.naturalWidth || water.y + water.height > image.naturalHeight) {
+      throw new Error('Invalid pool art geometry');
+    }
     const map = document.createElement('canvas');
-    map.width = metadata.pixelGrid.width; map.height = metadata.pixelGrid.height;
+    const scale = Math.min(grid.width / width, grid.height / height);
+    map.width = Math.max(1, Math.round(width * scale));
+    map.height = Math.max(1, Math.round(height * scale));
     const context = map.getContext('2d');
     context.imageSmoothingEnabled = false;
-    const slices = metadata.sourceSlices;
     const sx = [0, slices.left, slices.right, image.naturalWidth];
     const sy = [0, slices.top, slices.bottom, image.naturalHeight];
     const dx = [0, bounds.left, bounds.right, width].map(x => x / width * map.width);
@@ -110,7 +125,6 @@
           dx[column], dy[row], dx[column + 1] - dx[column], dy[row + 1] - dy[row]);
       }
     }
-    const water = metadata.waterTexture;
     context.drawImage(image, water.x, water.y, water.width, water.height,
       dx[1], dy[1], dx[2] - dx[1], dy[2] - dy[1]);
     context.strokeStyle = '#438eaa'; context.lineWidth = 1;
@@ -125,5 +139,32 @@
     };
   }
 
-  return { load, loadPool, reactionAt, floatImage };
+  function drawPoolFallback(context, definition) {
+    const { width, height, bounds: b } = definition.world;
+    const w = b.right - b.left, h = b.bottom - b.top;
+    const box = (x, y, bw, bh, radius, color) => {
+      context.beginPath(); context.roundRect(x, y, bw, bh, radius);
+      context.fillStyle = color; context.fill();
+    };
+    context.save();
+    context.fillStyle = '#e7eff0'; context.fillRect(0, 0, width, height);
+    context.lineWidth = 1; context.strokeStyle = '#d5e2e6';
+    for (let x = 0; x < width; x += 32) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, height); context.stroke(); }
+    for (let y = 0; y < height; y += 32) { context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke(); }
+    box(b.left - 29, b.top - 25, w + 58, h + 60, 30, '#92bcca');
+    box(b.left - 29, b.top - 32, w + 58, h + 60, 30, '#70b5d1');
+    box(b.left - 17, b.top - 19, w + 34, h + 34, 20, '#eaf9fb');
+    context.fillStyle = '#79cbdc'; context.fillRect(b.left, b.top, w, h);
+    context.fillStyle = '#9fdfe7'; context.fillRect(b.left + 4, b.top + 4, w - 8, h - 8);
+    context.strokeStyle = '#d2f5f4'; context.globalAlpha = 0.37;
+    for (let x = b.left + 28; x < b.right - 4; x += 52) {
+      context.beginPath(); context.moveTo(x, b.top + 4); context.lineTo(x, b.bottom - 4); context.stroke();
+    }
+    for (let y = b.top + 28; y < b.bottom - 4; y += 52) {
+      context.beginPath(); context.moveTo(b.left + 4, y); context.lineTo(b.right - 4, y); context.stroke();
+    }
+    context.restore();
+  }
+
+  return { load, loadPool, drawPoolFallback, reactionAt, floatImage };
 });

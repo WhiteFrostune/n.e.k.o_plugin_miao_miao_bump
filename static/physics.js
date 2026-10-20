@@ -1,29 +1,23 @@
 /* Browser and Node share this simulation; Matter.js is bundled locally. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./vendor/matter-0.20.0.min.js'));
+    module.exports = factory(require('./vendor/matter-0.20.0.min.js'), require('./maps.js'));
   } else {
-    root.MiaoPhysics = factory(root.Matter);
+    root.MiaoPhysics = factory(root.Matter, root.MiaoMaps);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Matter) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Matter, Maps) {
   'use strict';
 
   const { Engine, Bodies, Body, Composite, Events } = Matter;
-  const WIDTH = 960;
-  const HEIGHT = 600;
-  const RADIUS = 40;
-  const BOUNDS = Object.freeze({ left: 44, top: 44, right: 916, bottom: 556 });
+  const DEFAULT_MAP = Maps.get();
+  // Default aliases remain for existing integrations; active worlds own their map.
+  const { width: WIDTH, height: HEIGHT, bounds: BOUNDS } = DEFAULT_MAP.world;
+  const RADIUS = Maps.RADIUS;
   const STEP_MS = 1000 / 240;
   const STOP_SPEED = 12;
   const DEFAULTS = Object.freeze({ drag: 0.8, bounce: 0.94, wallBounce: 0.9, maxSpeed: 1600 });
   const LIMITS = Object.freeze({ drag: [0.35, 1.6], bounce: [0.55, 0.99], wallBounce: [0.55, 0.99], maxSpeed: [800, 2200] });
-  const LAYOUTS = Object.freeze({
-    free: [[250, 345], [500, 235], [715, 365]],
-    wall: [[300, 300]],
-    duel: [[260, 300], [615, 300]],
-    chain: [[220, 300], [480, 300], [735, 300]],
-    corner: [[86, 86], [168, 86], [86, 168]],
-  });
+  const LAYOUTS = DEFAULT_MAP.practiceLayouts;
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
   function launchVector(start, end, maxSpeed = DEFAULTS.maxSpeed) {
@@ -40,7 +34,8 @@
   }
 
   // Sweep a circle centre against inset walls and circles expanded by its radius.
-  function firstContact(origin, direction, rings, excludedId) {
+  function firstContact(origin, direction, rings, excludedId, map = DEFAULT_MAP) {
+    const bounds = Maps.get(map).world.bounds;
     const length = Math.hypot(direction.x, direction.y);
     if (!length) return null;
     const d = { x: direction.x / length, y: direction.y / length };
@@ -50,10 +45,10 @@
         best = { distance: Math.max(0, distance), normal, type };
       }
     };
-    if (d.x > 1e-8) accept((BOUNDS.right - RADIUS - origin.x) / d.x, { x: -1, y: 0 }, 'wall');
-    if (d.x < -1e-8) accept((BOUNDS.left + RADIUS - origin.x) / d.x, { x: 1, y: 0 }, 'wall');
-    if (d.y > 1e-8) accept((BOUNDS.bottom - RADIUS - origin.y) / d.y, { x: 0, y: -1 }, 'wall');
-    if (d.y < -1e-8) accept((BOUNDS.top + RADIUS - origin.y) / d.y, { x: 0, y: 1 }, 'wall');
+    if (d.x > 1e-8) accept((bounds.right - RADIUS - origin.x) / d.x, { x: -1, y: 0 }, 'wall');
+    if (d.x < -1e-8) accept((bounds.left + RADIUS - origin.x) / d.x, { x: 1, y: 0 }, 'wall');
+    if (d.y > 1e-8) accept((bounds.bottom - RADIUS - origin.y) / d.y, { x: 0, y: -1 }, 'wall');
+    if (d.y < -1e-8) accept((bounds.top + RADIUS - origin.y) / d.y, { x: 0, y: 1 }, 'wall');
     for (const ring of rings) {
       if (ring.id === excludedId) continue;
       const ox = origin.x - ring.x;
@@ -74,6 +69,7 @@
 
   class PoolWorld {
     constructor(options = {}) {
+      this.map = Maps.get(options.map);
       this.params = { ...DEFAULTS };
       this.engine = Engine.create({ gravity: { x: 0, y: 0, scale: 0 }, positionIterations: 8, velocityIterations: 8 });
       this._collisionHandler = event => this._collisions(event.pairs, true);
@@ -101,7 +97,8 @@
     }
 
     reset(layout = this.layout || 'free', actors = null) {
-      if (!actors && !Object.hasOwn(LAYOUTS, layout)) layout = 'free';
+      const layouts = this.map.practiceLayouts;
+      if (!actors && !Object.hasOwn(layouts, layout)) layout = 'free';
       Composite.clear(this.engine.world, false);
       Engine.clear(this.engine);
       this.layout = layout;
@@ -117,14 +114,15 @@
       this._velocities = new Map();
       this._contacts = new Map();
       const wallOptions = { isStatic: true, friction: 0, frictionStatic: 0, restitution: this.params.wallBounce };
+      const { width, height, bounds } = this.map.world;
       const walls = [
-        Bodies.rectangle(24, 300, 40, 680, wallOptions),
-        Bodies.rectangle(936, 300, 40, 680, wallOptions),
-        Bodies.rectangle(480, 24, 960, 40, wallOptions),
-        Bodies.rectangle(480, 576, 960, 40, wallOptions),
+        Bodies.rectangle(bounds.left - 20, height / 2, 40, height + 80, wallOptions),
+        Bodies.rectangle(bounds.right + 20, height / 2, 40, height + 80, wallOptions),
+        Bodies.rectangle(width / 2, bounds.top - 20, width, 40, wallOptions),
+        Bodies.rectangle(width / 2, bounds.bottom + 20, width, 40, wallOptions),
       ];
       Composite.add(this.engine.world, walls);
-      const placements = actors || LAYOUTS[layout].map(([x, y], id) => ({ x, y, id }));
+      const placements = actors || layouts[layout].map(([x, y], id) => ({ x, y, id }));
       this.rings = placements.map(({ x, y, id, mass = 1, wallBonus = 0 }) => {
         const body = Bodies.circle(x, y, RADIUS, {
           friction: 0, frictionStatic: 0, frictionAir: 0, restitution: this.params.bounce,

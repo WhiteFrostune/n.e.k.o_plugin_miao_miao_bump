@@ -1,4 +1,6 @@
 {
+  "map.summerPool": "夏日水池",
+  "map.fallback": "地圖無法使用，已改用預設水池。",
   "plugin.name": "喵喵碰碰大作戰",
   "plugin.description": "貓娘泳圈物理碰撞小遊戲，提供拖曳發射、水阻、連續反彈和手感調整。",
   "ui.prototype": "貓貓泳圈對戰",

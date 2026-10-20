@@ -1,4 +1,6 @@
 {
+  "map.summerPool": "여름 수영장",
+  "map.fallback": "맵을 사용할 수 없어 기본 수영장으로 전환했습니다.",
   "plugin.name": "야옹야옹 충돌 대작전",
   "plugin.description": "드래그 발사, 물 저항, 연속 반동과 손맛 조절을 제공하는 고양이 소녀 튜브 물리 연습장입니다.",
   "ui.prototype": "고양이 튜브 대전",

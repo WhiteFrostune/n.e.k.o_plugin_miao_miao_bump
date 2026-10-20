@@ -1,4 +1,6 @@
 {
+  "map.summerPool": "Summer Pool",
+  "map.fallback": "Map unavailable. Using the default pool.",
   "plugin.name": "Meow Meow Bump Battle",
   "plugin.description": "A catgirl swimming-ring physics playground with pull-to-launch controls, water drag and bounce tuning.",
   "ui.prototype": "Pool bump battle",

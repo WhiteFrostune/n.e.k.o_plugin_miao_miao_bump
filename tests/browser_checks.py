@@ -17,12 +17,14 @@ def snapshot(page):
 
 
 def ring_point(page, ring_id=0):
-    ring = next(ring for ring in snapshot(page)["rings"] if ring["id"] == ring_id)
+    state = snapshot(page)
+    ring = next(ring for ring in state["rings"] if ring["id"] == ring_id)
+    width, height = state["map"]["width"], state["map"]["height"]
     bounds = page.locator("#pool").bounding_box()
     return (
-        bounds["x"] + ring["x"] / 960 * bounds["width"],
-        bounds["y"] + ring["y"] / 600 * bounds["height"],
-        bounds["width"] / 960,
+        bounds["x"] + ring["x"] / width * bounds["width"],
+        bounds["y"] + ring["y"] / height * bounds["height"],
+        bounds["width"] / width,
     )
 
 
@@ -53,7 +55,8 @@ def assert_viewport_fit(page):
     pool = page.locator("#pool").bounding_box()
     controls = page.locator(".controls").bounding_box()
     assert pool["width"] > 100 and pool["height"] > 60
-    assert abs(pool["width"] / pool["height"] - 1.6) < 0.01
+    map_state = snapshot(page)["map"]
+    assert abs(pool["width"] / pool["height"] - map_state["width"] / map_state["height"]) < 0.01
     assert pool["y"] >= 0 and pool["y"] + pool["height"] <= controls["y"]
     assert controls["y"] + controls["height"] <= viewport["height"] + 1
     for selector in ["#layout", "#reset", "#show-tuning", "#show-art"]:

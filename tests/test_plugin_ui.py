@@ -55,6 +55,7 @@ async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch, ja
             ("/index.html", "text/html"),
             ("/game.js", javascript_mime),
             ("/physics.js", javascript_mime),
+            ("/maps.js", javascript_mime),
             ("/battle.js", javascript_mime),
             ("/sound.js", javascript_mime),
             ("/art.js", javascript_mime),

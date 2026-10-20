@@ -1,4 +1,6 @@
 {
+  "map.summerPool": "Piscina de verano",
+  "map.fallback": "Mapa no disponible. Se usa la piscina predeterminada.",
   "plugin.name": "Miau Miau: batalla de flotadores",
   "plugin.description": "Zona de física con chicas gato en flotadores: lanzamiento por arrastre, resistencia del agua y rebotes ajustables.",
   "ui.prototype": "Batalla gatuna acuática",

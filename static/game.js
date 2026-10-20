@@ -1,6 +1,9 @@
 (function () {
   'use strict';
   const P = window.MiaoPhysics;
+  const mapChoice = window.MiaoMaps.resolve(new URLSearchParams(location.search).get('map') || window.MiaoMaps.DEFAULT_ID);
+  const map = mapChoice.map;
+  const { width: WIDTH, height: HEIGHT } = map.world;
   const I = window.MiaoI18n;
   const A = window.MiaoArt;
   const B = window.MiaoBattle;
@@ -38,7 +41,7 @@
 
   function toWorld(event) {
     const rect = canvas.getBoundingClientRect();
-    return { x: (event.clientX - rect.left) * P.WIDTH / rect.width, y: (event.clientY - rect.top) * P.HEIGHT / rect.height };
+    return { x: (event.clientX - rect.left) * WIDTH / rect.width, y: (event.clientY - rect.top) * HEIGHT / rect.height };
   }
 
   function resize() {
@@ -63,12 +66,12 @@
     cancelAim();
     document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
     if ($('game-mode').value === 'battle') {
-      if (!match) { if (world) world.destroy(); match = new B.Match(); }
+      if (!match) { if (world) world.destroy(); match = new B.Match({ map }); }
       else match.reset();
       world = match.world;
     } else {
       if (match) { match.destroy(); match = null; world = null; }
-      if (!world) world = new P.PoolWorld();
+      if (!world) world = new P.PoolWorld({ map });
       world.reset($('layout').value);
     }
     selected = 0;
@@ -204,30 +207,8 @@
   }
 
   function drawPool() {
-    if (poolArt) { poolArt.draw(ctx); return; }
-    ctx.fillStyle = '#e7eff0'; ctx.fillRect(0, 0, P.WIDTH, P.HEIGHT);
-    ctx.lineWidth = 1; ctx.strokeStyle = '#d5e2e6';
-    for (let x = 0; x < P.WIDTH; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, P.HEIGHT); ctx.stroke(); }
-    for (let y = 0; y < P.HEIGHT; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(P.WIDTH, y); ctx.stroke(); }
-    roundRect(15, 19, 930, 572, 30, '#92bcca');
-    roundRect(15, 12, 930, 572, 30, '#70b5d1');
-    roundRect(27, 25, 906, 546, 20, '#eaf9fb');
-    ctx.fillStyle = '#79cbdc'; ctx.fillRect(44, 44, 872, 512);
-    ctx.fillStyle = '#9fdfE7'; ctx.fillRect(48, 48, 864, 504);
-    ctx.strokeStyle = '#d2f5f4'; ctx.lineWidth = 1; ctx.globalAlpha = 0.37;
-    for (let x = 72; x < 916; x += 52) { ctx.beginPath(); ctx.moveTo(x, 48); ctx.lineTo(x, 552); ctx.stroke(); }
-    for (let y = 72; y < 556; y += 52) { ctx.beginPath(); ctx.moveTo(48, y); ctx.lineTo(912, y); ctx.stroke(); }
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#b5e9ee';
-    for (const [x, y] of [[120, 100], [820, 160], [390, 470], [590, 120], [140, 460]]) {
-      ctx.fillRect(x - 5, y - 1, 10, 2); ctx.fillRect(x - 1, y - 5, 2, 10);
-    }
-    ctx.strokeStyle = '#70b8cf'; ctx.lineWidth = 5;
-    for (let x = 150; x < 900; x += 180) {
-      ctx.beginPath(); ctx.moveTo(x, 14); ctx.lineTo(x, 39); ctx.moveTo(x, 561); ctx.lineTo(x, 580); ctx.stroke();
-    }
-    ctx.strokeStyle = '#f8ffff'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(60, 34); ctx.lineTo(890, 34); ctx.stroke();
+    if (poolArt) poolArt.draw(ctx);
+    else A.drawPoolFallback(ctx, map);
   }
 
   function drawRing(ring, ghost = false) {
@@ -291,7 +272,7 @@
     const vector = P.launchVector(drag.start, drag.end, world.params.maxSpeed);
     if (!vector.power) return;
     const origin = rings.find(ring => ring.id === selected);
-    const contact = P.firstContact(origin, vector, rings, selected);
+    const contact = P.firstContact(origin, vector, rings, selected, map);
     if (!contact) return;
     const d = contact.direction;
     ctx.save(); ctx.strokeStyle = '#335e80'; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.globalAlpha = 0.6;
@@ -300,7 +281,7 @@
     if (contact.type === 'wall') {
       const dot = d.x * contact.normal.x + d.y * contact.normal.y;
       const reflected = { x: d.x - 2 * dot * contact.normal.x, y: d.y - 2 * dot * contact.normal.y };
-      const next = P.firstContact({ x: contact.x + reflected.x * 0.01, y: contact.y + reflected.y * 0.01 }, reflected, rings, selected);
+      const next = P.firstContact({ x: contact.x + reflected.x * 0.01, y: contact.y + reflected.y * 0.01 }, reflected, rings, selected, map);
       const length = Math.min(130, next ? next.distance : 130);
       ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.moveTo(contact.x, contact.y);
       ctx.lineTo(contact.x + reflected.x * length, contact.y + reflected.y * length); ctx.stroke();
@@ -316,8 +297,8 @@
   }
 
   function draw() {
-    ctx.setTransform(canvas.width / P.WIDTH, 0, 0, canvas.height / P.HEIGHT, 0, 0);
-    ctx.clearRect(0, 0, P.WIDTH, P.HEIGHT);
+    ctx.setTransform(canvas.width / WIDTH, 0, 0, canvas.height / HEIGHT, 0, 0);
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
     drawPool();
     for (const points of trails.values()) {
       if (points.length < 2) continue;
@@ -349,7 +330,7 @@
       ctx.font = 'bold 20px "Segoe UI", "Microsoft YaHei", sans-serif';
       ctx.lineWidth = 4; ctx.strokeStyle = '#fffef6';
       const text = `−${effect.damage}`;
-      const x = Math.max(72, Math.min(888, effect.x));
+      const x = Math.max(72, Math.min(WIDTH - 72, effect.x));
       const y = Math.max(64, effect.y - 120 - effect.age * 30);
       ctx.strokeText(text, x, y); ctx.fillStyle = '#ad4d61'; ctx.fillText(text, x, y);
       if (effect.guard) {
@@ -453,9 +434,12 @@
 
   async function boot() {
     await I.init();
+    document.querySelector('.canvas-wrap').style.setProperty('--pool-ratio', WIDTH / HEIGHT);
+    document.querySelector('.canvas-wrap').style.setProperty('--pool-height-width', `${100 * WIDTH / HEIGHT}cqh`);
+    $('map-note').hidden = !mapChoice.fallback;
     floatImages = colors.map(A.floatImage);
     const loaded = await Promise.allSettled([
-      ...characterKeys.map(key => A.load(key)), A.loadPool(P.BOUNDS, P.WIDTH, P.HEIGHT),
+      ...characterKeys.map(key => A.load(key)), A.loadPool(map),
     ]);
     // An unavailable character falls back independently; other sprites remain usable.
     art = loaded.slice(0, characterKeys.length).map(result => result.status === 'fulfilled' ? result.value : null);
@@ -510,7 +494,9 @@
       mode: match ? 'battle' : 'practice', battle: match ? match.snapshot() : null,
       elapsed: world.elapsed, collisions: world.count, fault: world.fault,
       params: { ...world.params }, rings: world.snapshot(), destroyed,
-      map: { loaded: Boolean(poolArt), bounds: { ...P.BOUNDS } },
+      map: { id: map.id, nameKey: map.nameKey, requestedId: mapChoice.requestedId, fallback: mapChoice.fallback,
+        loaded: Boolean(poolArt), width: WIDTH, height: HEIGHT, bounds: { ...map.world.bounds },
+        spawns: map.spawns, spawnRegions: map.spawnRegions },
       art: {
         loaded: Boolean(art[0]), frameCount: art[0] ? art[0].metadata.frames.length : 0, previewFrame,
         pixelGrid: art[0] ? art[0].metadata.pixelGrid : null, collisionRadius: P.RADIUS,

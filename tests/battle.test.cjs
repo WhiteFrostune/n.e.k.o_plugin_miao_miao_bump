@@ -49,7 +49,7 @@ test('Milkcap guard triggers only on the first valid hit in each enemy action an
   assert.equal(match.actors[5].hp, 66);
   settle(match);
   match.launch(3, { x: -20, y: 0 }); settle(match);
-  match.launch(0, { x: 20, y: 0 });
+  assert.equal(match.launch(1, { x: 20, y: 0 }), true);
   match.handleContact(hit(1, 5));
   assert.equal(match.actors[5].hp, 56);
   match.destroy();
@@ -239,7 +239,8 @@ test('changing turns does not turn an existing resting contact into another atta
   const { Body } = require('../static/vendor/matter-0.20.0.min.js');
   const match = new B.Match();
   match.world.reset('resting-test', [
-    { id: 0, x: 300, y: 300 }, { id: 3, x: 380, y: 300 }, { id: 4, x: 650, y: 450 },
+    { id: 0, x: 300, y: 300 }, { id: 1, x: 650, y: 150 },
+    { id: 3, x: 380, y: 300 }, { id: 4, x: 650, y: 450 },
   ]);
   match.launch(0, { x: 30, y: 0 });
   while (match.actors[3].hp === 120 && match.world.moving) match.world.step();
@@ -254,7 +255,9 @@ test('changing turns does not turn an existing resting contact into another atta
   assert.equal(match.actors[3].hp, 96);
   // A new approach in a later turn still counts once the rings have separated.
   Body.setPosition(defender, { x: 385, y: 300 });
-  match.launch(0, { x: 30, y: 0 }); settle(match);
+  assert.equal(match.launch(1, { x: 20, y: 0 }), true);
+  Body.setVelocity(match.world.rings.find(cat => cat.id === 0).body, { x: 30 / 60, y: 0 });
+  settle(match);
   assert.equal(match.actors[3].hp, 72);
   match.destroy();
 });
@@ -272,6 +275,7 @@ test('local AI completes whole games without deadlocks, invalid picks, tunneling
   for (const opener of [0, 1]) {
     const match = new B.Match();
     match.side = opener;
+    match.roundStarter = opener;
     let actions = 0;
     for (; match.phase === 'ready' && actions < 160; actions += 1) {
       const before = match.snapshot();

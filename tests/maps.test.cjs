@@ -109,6 +109,7 @@ test('CPU plays full games using square-map geometry for both starting sides', (
     const match = new B.Match({ map: fixture });
     try {
       match.side = opener;
+      match.roundStarter = opener;
       for (let turn = 0; match.phase === 'ready' && turn < 160; turn += 1) {
         const state = match.snapshot();
         // JSON transport must not depend on Map registry identity in the AI.

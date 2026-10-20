@@ -20,6 +20,8 @@
     reset() {
       this.side = 0;
       this.turn = 1;
+      this.round = 1;
+      this.roundStarter = 0;
       this.phase = 'ready';
       this.winner = null;
       this.activeId = null;
@@ -29,15 +31,19 @@
         const stats = ROLES[role];
         return { id, role, team: id < 3 ? 0 : 1, hp: stats.hp, maxHp: stats.hp,
           attack: stats.attack, mass: stats.mass, wallBonus: stats.wallBonus,
-          shieldUsed: false, removed: false, x, y };
+          shieldUsed: false, removed: false, usedThisRound: false, x, y };
       });
       this.world.setParams(P.DEFAULTS);
       this.world.reset('battle', this.actors);
     }
 
+    available(team = this.side) {
+      return this.actors.filter(cat => cat.team === team && cat.hp > 0 && !cat.removed && !cat.usedThisRound);
+    }
+
     canLaunch(id) {
       const cat = this.actors.find(item => item.id === id);
-      return this.phase === 'ready' && Boolean(cat && cat.hp > 0 && !cat.removed && cat.team === this.side);
+      return this.phase === 'ready' && Boolean(cat && cat.hp > 0 && !cat.removed && !cat.usedThisRound && cat.team === this.side);
     }
 
     launch(id, velocity) {
@@ -46,6 +52,7 @@
       // Equal launch energy: heavier Juzi resists displacement but starts more slowly.
       const scale = 1 / Math.sqrt(cat.mass);
       if (!this.world.launch(id, { x: velocity.x * scale, y: velocity.y * scale })) return false;
+      cat.usedThisRound = true;
       for (const defender of this.actors) if (defender.team !== this.side) defender.shieldUsed = false;
       this.activeId = id;
       this.phase = 'moving';
@@ -90,7 +97,14 @@
         this.winner = alive[0] ? 0 : alive[1] ? 1 : 'draw';
         this.events.push({ type: 'result', winner: this.winner });
       } else {
-        this.side = 1 - this.side;
+        const other = 1 - this.side;
+        if (!this.available(0).length && !this.available(1).length) {
+          this.round += 1;
+          this.roundStarter = 1 - this.roundStarter;
+          for (const cat of this.actors) if (cat.hp > 0 && !cat.removed) cat.usedThisRound = false;
+          this.side = this.roundStarter;
+          this.events.push({ type: 'round', round: this.round, starter: this.roundStarter });
+        } else if (this.available(other).length) this.side = other;
         this.turn += 1;
         this.activeId = null;
         this.phase = 'ready';
@@ -100,7 +114,9 @@
 
     snapshot() {
       const rings = this.world.snapshot();
-      return { side: this.side, turn: this.turn, phase: this.phase, winner: this.winner, activeId: this.activeId, map: this.map,
+      return { side: this.side, turn: this.turn, round: this.round, roundStarter: this.roundStarter,
+        remainingActions: [this.available(0).length, this.available(1).length],
+        phase: this.phase, winner: this.winner, activeId: this.activeId, map: this.map,
         actors: this.actors.map(cat => ({ ...cat, ...rings.find(ring => ring.id === cat.id) })) };
     }
 
@@ -113,7 +129,7 @@
   // deliberately an estimate, not a full-chain simulation or an exact aim assist.
   function chooseShot(state, params = P.DEFAULTS) {
     const cats = state.actors.filter(cat => cat.hp > 0 && !cat.removed);
-    const friends = cats.filter(cat => cat.team === state.side);
+    const friends = cats.filter(cat => cat.team === state.side && !cat.usedThisRound);
     const opponents = cats.filter(cat => cat.team !== state.side);
     if (state.phase !== 'ready' || !friends.length || !opponents.length) return null;
     const map = state.map;

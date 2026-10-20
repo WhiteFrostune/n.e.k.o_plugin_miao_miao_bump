@@ -22,6 +22,7 @@ button:disabled { cursor: default; opacity: .45; }
 .workspace { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; min-height: 0; }
 .pool-section { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; min-height: 0; min-width: 0; }
 .pool-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.round-status { font-size: 11px; color: #587687; white-space: nowrap; }
 .state-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; color: #578879; font-size: 12px; font-weight: 650; }
 .state-pill::before { content: ''; width: 7px; height: 7px; background: #7db8a0; border-radius: 50%; }
 .state-pill[data-state="moving"] { color: #377999; }
@@ -39,6 +40,8 @@ canvas.moving { cursor: default; }
 .pool-footer button { flex-shrink: 0; }
 .footer-actions { display: flex; gap: 8px; margin-left: auto; }
 .team-status { font-size: 11px; color: #5d788b; margin-left: auto; }
+.pool-heading { flex-wrap: wrap; }
+@media (max-width: 740px) { .round-status { font-size: 10px; } }
 .controls { display: flex; align-items: center; gap: 24px; min-width: 0; padding: 12px 18px; background: #ffffffdd; border: 1px solid #d6e5e9; border-radius: 12px; }
 .setup { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .setup label { font-size: 11px; color: #7b8e9b; white-space: nowrap; }

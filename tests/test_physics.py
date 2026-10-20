@@ -13,7 +13,7 @@ def test_physics_regressions() -> None:
         pytest.skip("Node.js is required for the physics regression suite")
     root = Path(__file__).resolve().parents[1]
     result = subprocess.run(
-        [node, "--test", "tests/physics.test.cjs", "tests/battle.test.cjs", "tests/maps.test.cjs"],
+        [node, "--test", "tests/physics.test.cjs", "tests/battle.test.cjs", "tests/maps.test.cjs", "tests/rounds.test.cjs"],
         cwd=root,
         capture_output=True,
         text=True,

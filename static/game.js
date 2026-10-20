@@ -140,6 +140,7 @@
     $('selected-name').textContent = `${cat ? (cat.team === 0 ? '◆ ' : '● ') : ''}${I.t(`character.${role}`)}`;
     $('selected-name').style.color = cat?.team === 1 ? '#a15e67' : colors[role].dark;
     $('selected-stats').textContent = cat ? `${I.t('battle.hp')} ${cat.hp}/${cat.maxHp} · ${I.t('battle.attack')} ${cat.attack}` : '';
+    if (cat) $('selected-stats').textContent += ` · ${I.t(cat.hp <= 0 ? 'battle.defeated' : cat.usedThisRound ? 'battle.acted' : 'battle.available')}`;
     $('selected-skill').hidden = !match;
     $('selected-skill').textContent = match ? `${I.t(`skill.${role}.name`)} · ${I.t(`skill.${role}.brief`)}` : '';
     $('character-stats').textContent = $('selected-stats').textContent;
@@ -186,9 +187,10 @@
     $('tuning-fields').disabled = world.moving || Boolean(match);
     canvas.classList.toggle('moving', world.moving);
     $('team-status').hidden = !match;
+    $('round-status').hidden = !match;
     if (match) {
-      const remaining = [0, 1].map(team => match.actors.filter(cat => cat.team === team && cat.hp > 0).length);
-      $('team-status').textContent = `◆ ${I.t('battle.ally')} ${remaining[0]} · ● ${I.t('battle.enemy')} ${remaining[1]}`;
+      $('round-status').textContent = `${I.t('battle.round')} ${match.round} · ${I.t(match.roundStarter === 0 ? 'battle.ally' : 'battle.enemy')} ${I.t('battle.first')}`;
+      $('team-status').textContent = `${I.t('battle.actionsLeft')} ◆ ${match.available(0).length} · ● ${match.available(1).length}`;
     }
     $('pause-cover').hidden = !suspended;
   }
@@ -219,7 +221,7 @@
     if (ghost) ctx.globalAlpha = Math.max(0, 1 - ring.age / 0.5);
     else if (cat && cat.hp <= 0) ctx.globalAlpha = 0.45;
     circle(0, 6, P.RADIUS + 2, '#39799225');
-    if (ring.id === selected && !world.moving) {
+    if (ring.id === selected && !world.moving && (!match || match.canLaunch(ring.id))) {
       ctx.lineWidth = 2; ctx.setLineDash([4, 5]);
       circle(0, 0, P.RADIUS + 8, null, '#467c9b'); ctx.setLineDash([]);
     }
@@ -249,7 +251,7 @@
       }
       ctx.beginPath(); ctx.moveTo(-3, 5); ctx.lineTo(0, 7); ctx.lineTo(3, 5); ctx.strokeStyle = palette.dark; ctx.stroke();
     }
-    const name = `${cat ? (cat.team === 0 ? '◆ ' : '● ') : ''}${I.t(`character.${role}`)}`;
+    const name = `${cat ? (cat.team === 0 ? '◆ ' : '● ') : ''}${I.t(`character.${role}`)}${cat?.usedThisRound && cat.hp > 0 ? ' ✓' : ''}`;
     ctx.font = '600 13px "Segoe UI", "Microsoft YaHei", sans-serif';
     const width = ctx.measureText(name).width + 20;
     roundRect(-width / 2, P.RADIUS + 9, width, 23, 7, '#f9ffffe8');
@@ -395,7 +397,7 @@
         }
       }
       if (match?.phase === 'ready' && match.side === 0 && !match.canLaunch(selected)) {
-        selected = match.actors.find(cat => cat.team === 0 && cat.hp > 0).id;
+        selected = match.available(0)[0]?.id ?? selected;
       }
       effects = effects.map(item => ({ ...item, age: item.age + dt / 1000 })).filter(item => item.age < 0.55).slice(-35);
       if (world.moving) {

@@ -55,9 +55,17 @@ async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch, ja
             ("/index.html", "text/html"),
             ("/game.js", javascript_mime),
             ("/physics.js", javascript_mime),
+            ("/battle.js", javascript_mime),
+            ("/sound.js", javascript_mime),
             ("/art.js", javascript_mime),
             ("/assets/juzi.json", "application/json"),
             ("/assets/juzi-expressions.png", "image/png"),
+            ("/assets/pudding.json", "application/json"),
+            ("/assets/pudding-expressions.png", "image/png"),
+            ("/assets/milkcap.json", "application/json"),
+            ("/assets/milkcap-expressions.png", "image/png"),
+            ("/assets/summer-pool.json", "application/json"),
+            ("/assets/summer-pool.png", "image/png"),
             ("/vendor/matter-0.20.0.min.js", javascript_mime),
         ]:
             response = await client.get("/plugin/miao_miao_bump/ui" + suffix)

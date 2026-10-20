@@ -13,11 +13,11 @@ def test_physics_regressions() -> None:
         pytest.skip("Node.js is required for the physics regression suite")
     root = Path(__file__).resolve().parents[1]
     result = subprocess.run(
-        [node, "--test", "tests/physics.test.cjs"],
+        [node, "--test", "tests/physics.test.cjs", "tests/battle.test.cjs"],
         cwd=root,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=120,
         encoding="utf-8",
     )
     assert result.returncode == 0, result.stdout + result.stderr

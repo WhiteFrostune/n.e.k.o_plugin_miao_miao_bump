@@ -26,7 +26,7 @@ class MiaoMiaoBumpPlugin(NekoPluginBase):
         self.set_list_actions([
             {
                 "id": "open_playground",
-                "label": tr("actions.open", default="Open collision playground"),
+                "label": tr("actions.open", default="Open Meow Meow Bump Battle"),
                 "kind": "ui",
                 "target": "/plugin/miao_miao_bump/ui/index.html",
                 "open_in": "new_tab",

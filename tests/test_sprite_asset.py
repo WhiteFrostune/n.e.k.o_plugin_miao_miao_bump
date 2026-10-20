@@ -3,14 +3,16 @@
 import json
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_juzi_frames_have_transparency_and_do_not_crop_opaque_pixels() -> None:
+@pytest.mark.parametrize("character", ["juzi", "pudding", "milkcap"])
+def test_frames_have_transparency_and_do_not_crop_opaque_pixels(character: str) -> None:
     assets = ROOT / "static" / "assets"
-    metadata = json.loads((assets / "juzi.json").read_text(encoding="utf-8"))
+    metadata = json.loads((assets / f"{character}.json").read_text(encoding="utf-8"))
     with Image.open(assets / metadata["image"]) as image:
         assert image.mode == "RGBA"
         alpha = image.getchannel("A")

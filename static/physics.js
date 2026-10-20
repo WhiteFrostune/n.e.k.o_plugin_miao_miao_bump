@@ -100,8 +100,8 @@
       return true;
     }
 
-    reset(layout = this.layout || 'free') {
-      if (!Object.hasOwn(LAYOUTS, layout)) layout = 'free';
+    reset(layout = this.layout || 'free', actors = null) {
+      if (!actors && !Object.hasOwn(LAYOUTS, layout)) layout = 'free';
       Composite.clear(this.engine.world, false);
       Engine.clear(this.engine);
       this.layout = layout;
@@ -115,6 +115,7 @@
       this.fault = false;
       this._lastImpacts = new Map();
       this._velocities = new Map();
+      this._contacts = new Map();
       const wallOptions = { isStatic: true, friction: 0, frictionStatic: 0, restitution: this.params.wallBounce };
       const walls = [
         Bodies.rectangle(24, 300, 40, 680, wallOptions),
@@ -123,16 +124,33 @@
         Bodies.rectangle(480, 576, 960, 40, wallOptions),
       ];
       Composite.add(this.engine.world, walls);
-      this.rings = LAYOUTS[layout].map(([x, y], id) => {
+      const placements = actors || LAYOUTS[layout].map(([x, y], id) => ({ x, y, id }));
+      this.rings = placements.map(({ x, y, id, mass = 1, wallBonus = 0 }) => {
         const body = Bodies.circle(x, y, RADIUS, {
           friction: 0, frictionStatic: 0, frictionAir: 0, restitution: this.params.bounce,
           inertia: Infinity, slop: 0.01, label: `ring-${id}`,
         }, 64);
-        Body.setMass(body, 1);
+        Body.setMass(body, mass);
         body.plugin.ringId = id;
+        body.plugin.wallBonus = wallBonus;
         Composite.add(this.engine.world, body);
         return { id, body };
       });
+    }
+
+    disablePassives(id) {
+      const ring = this.rings.find(item => item.id === id);
+      if (!ring) return;
+      ring.body.plugin.wallBonus = 0;
+      Body.setMass(ring.body, 1);
+    }
+
+    remove(ids) {
+      if (this.moving) return false;
+      const removed = new Set(ids);
+      for (const ring of this.rings) if (removed.has(ring.id)) Composite.remove(this.engine.world, ring.body);
+      this.rings = this.rings.filter(ring => !removed.has(ring.id));
+      return true;
     }
 
     launch(id, velocity) {
@@ -150,6 +168,7 @@
       this.fault = false;
       this.impacts = [];
       this._lastImpacts.clear();
+      this._contacts.clear();
       return true;
     }
 
@@ -157,27 +176,43 @@
       for (const pair of pairs) {
         const wall = pair.bodyA.isStatic || pair.bodyB.isStatic;
         // Matter defaults to max(A.restitution, B.restitution); use independent controls.
-        pair.restitution = wall ? this.params.wallBounce : this.params.bounce;
+        const dynamic = pair.bodyA.isStatic ? pair.bodyB : pair.bodyA;
+        pair.restitution = wall ? Math.min(0.99, this.params.wallBounce + (dynamic.plugin.wallBonus || 0)) : this.params.bounce;
         if (!started || !this.moving) continue;
         const a = this._velocities.get(pair.bodyA.id) || { x: 0, y: 0 };
         const b = this._velocities.get(pair.bodyB.id) || { x: 0, y: 0 };
         const normal = pair.collision.normal;
-        const impactSpeed = Math.abs((a.x - b.x) * normal.x + (a.y - b.y) * normal.y);
+        const dx = pair.bodyB.position.x - pair.bodyA.position.x;
+        const dy = pair.bodyB.position.y - pair.bodyA.position.y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const impactSpeed = wall ? Math.abs((a.x - b.x) * normal.x + (a.y - b.y) * normal.y)
+          : Math.max(0, ((a.x - b.x) * dx + (a.y - b.y) * dy) / distance);
         const key = [pair.bodyA.id, pair.bodyB.id].sort((x, y) => x - y).join(':');
+        if (!wall) {
+          if (this._contacts.has(key)) continue;
+          this._contacts.set(key, { a: pair.bodyA, b: pair.bodyB, separated: 0 });
+        }
         if (impactSpeed < 65 || this.elapsed - (this._lastImpacts.get(key) ?? -1) < 0.1) continue;
         this._lastImpacts.set(key, this.elapsed);
         this.count += 1;
-        const dynamic = pair.bodyA.isStatic ? pair.bodyB : pair.bodyA;
         const support = pair.collision.supports.find(Boolean) || dynamic.position;
         const ringIds = [pair.bodyA, pair.bodyB].filter(body => !body.isStatic).map(body => body.plugin.ringId);
-        this.impacts.push({ x: support.x, y: support.y, speed: impactSpeed, wall,
-          ringId: dynamic.plugin.ringId, ringIds, normal: { x: normal.x, y: normal.y } });
+        const impact = { x: support.x, y: support.y, speed: impactSpeed, wall,
+          ringId: dynamic.plugin.ringId, ringIds, normal: { x: normal.x, y: normal.y } };
+        this.impacts.push(impact);
+        // Combat resolves in the physical step, so a defeated cat cannot attack later in this frame.
+        if (this.onImpact) this.onImpact(impact);
       }
     }
 
     step() {
       if (!this.moving) return;
       const dt = STEP_MS / 1000;
+      for (const [key, contact] of this._contacts) {
+        const distance = Math.hypot(contact.a.position.x - contact.b.position.x, contact.a.position.y - contact.b.position.y);
+        contact.separated = distance > RADIUS * 2 + 2 ? contact.separated + dt : 0;
+        if (contact.separated >= 0.04) this._contacts.delete(key);
+      }
       this.elapsed += dt;
       const decay = Math.exp(-this.params.drag * dt);
       this._velocities.clear();
@@ -231,6 +266,7 @@
     }
 
     destroy() {
+      this.onImpact = null;
       Events.off(this.engine, 'collisionStart', this._collisionHandler);
       Events.off(this.engine, 'collisionActive', this._activeHandler);
       Composite.clear(this.engine.world, false);

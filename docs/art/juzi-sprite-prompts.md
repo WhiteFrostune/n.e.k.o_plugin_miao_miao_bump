@@ -1,5 +1,7 @@
 # 橘子像素精灵生成记录
 
+当前使用状态补充：用户已决定采用其重新提供的同造型三表情图作为开发占位资源；当前 PNG 直接复制该用户附件，未做图像编辑。下文保留最初的生成过程供追溯；后续替换方式见 [美术替换约定](ASSET_REPLACEMENT.md)。
+
 工具：内置 Image Gen，透明背景模式。原图由工具生成后原样复制到 `static/assets/juzi-expressions.png`，未通过脚本修改图片。三帧裁切范围记录在相邻的 `juzi.json` 中，渲染时读取指定区域。
 
 参考：本仓库 `docs/art/character-concepts.png` 左侧已确认的橘子形象。

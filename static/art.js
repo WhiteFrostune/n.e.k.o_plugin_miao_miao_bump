@@ -40,8 +40,8 @@
     return image;
   }
 
-  async function load() {
-    const metadataUrl = new URL('assets/juzi.json', document.baseURI);
+  async function load(character = 'juzi') {
+    const metadataUrl = new URL(`assets/${character}.json`, document.baseURI);
     const response = await fetch(metadataUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error('Character metadata unavailable');
     const metadata = await response.json();
@@ -84,5 +84,46 @@
     };
   }
 
-  return { load, reactionAt, floatImage };
+  async function loadPool(bounds, width, height) {
+    const metadataUrl = new URL('assets/summer-pool.json', document.baseURI);
+    const response = await fetch(metadataUrl, { cache: 'no-cache' });
+    if (!response.ok) throw new Error('Pool metadata unavailable');
+    const metadata = await response.json();
+    const image = new Image();
+    image.src = new URL(metadata.image, metadataUrl).href;
+    await image.decode();
+    const map = document.createElement('canvas');
+    map.width = metadata.pixelGrid.width; map.height = metadata.pixelGrid.height;
+    const context = map.getContext('2d');
+    context.imageSmoothingEnabled = false;
+    const slices = metadata.sourceSlices;
+    const sx = [0, slices.left, slices.right, image.naturalWidth];
+    const sy = [0, slices.top, slices.bottom, image.naturalHeight];
+    const dx = [0, bounds.left, bounds.right, width].map(x => x / width * map.width);
+    const dy = [0, bounds.top, bounds.bottom, height].map(y => y / height * map.height);
+    // Fit the eight rim patches around the authoritative physical water rectangle.
+    // Draw only clear water in the center so painted corners never become fake walls.
+    for (let row = 0; row < 3; row += 1) {
+      for (let column = 0; column < 3; column += 1) {
+        if (row === 1 && column === 1) continue;
+        context.drawImage(image, sx[column], sy[row], sx[column + 1] - sx[column], sy[row + 1] - sy[row],
+          dx[column], dy[row], dx[column + 1] - dx[column], dy[row + 1] - dy[row]);
+      }
+    }
+    const water = metadata.waterTexture;
+    context.drawImage(image, water.x, water.y, water.width, water.height,
+      dx[1], dy[1], dx[2] - dx[1], dy[2] - dy[1]);
+    context.strokeStyle = '#438eaa'; context.lineWidth = 1;
+    context.strokeRect(dx[1] - 0.5, dy[1] - 0.5, dx[2] - dx[1] + 1, dy[2] - dy[1] + 1);
+    return {
+      draw(target) {
+        target.save();
+        target.imageSmoothingEnabled = false;
+        target.drawImage(map, 0, 0, width, height);
+        target.restore();
+      },
+    };
+  }
+
+  return { load, loadPool, reactionAt, floatImage };
 });

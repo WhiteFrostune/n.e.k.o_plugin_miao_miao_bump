@@ -57,6 +57,8 @@ def assert_viewport_fit(page):
     assert pool["y"] >= 0 and pool["y"] + pool["height"] <= controls["y"]
     assert controls["y"] + controls["height"] <= viewport["height"] + 1
     for selector in ["#layout", "#reset", "#show-tuning", "#show-art"]:
+        if not page.locator(selector).is_visible():
+            continue
         bounds = page.locator(selector).bounding_box()
         assert bounds["x"] >= 0 and bounds["y"] >= 0
         assert bounds["x"] + bounds["width"] <= viewport["width"] + 1
@@ -76,17 +78,21 @@ def run(url):
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.on("request", lambda request: external.append(request.url) if not request.url.startswith(url.split('/static')[0]) else None)
-            page.goto(url + "?locale=zh-CN")
+            page.goto(url + "?locale=zh-CN&mode=practice")
             page.wait_for_load_state("networkidle")
             page.wait_for_function("Boolean(window.miaoPlayground)")
             assert page.locator("h1").inner_text() == "喵喵碰碰大作战"
             assert len(snapshot(page)["rings"]) == 3
             assert snapshot(page)["art"]["loaded"]
             assert snapshot(page)["art"]["frameCount"] == 3
+            assert snapshot(page)["map"]["loaded"]
+            assert snapshot(page)["map"]["bounds"] == {"left": 44, "top": 44, "right": 916, "bottom": 556}
+            assert all(cat["loaded"] and cat["frameCount"] == 3 for cat in snapshot(page)["art"]["characters"])
             assert_viewport_fit(page)
             assert snapshot(page)["art"]["collisionRadius"] == 40
             page.screenshot(path=str(artifacts / "desktop-idle.png"), full_page=True)
             checks.append("desktop load, complete pool and bottom controls fit the viewport without scrolling")
+            checks.append("pixel pool art loaded with the original rectangular water boundaries")
 
             original = snapshot(page)["rings"]
             page.click("#show-art")
@@ -105,6 +111,28 @@ def run(url):
             page.mouse.click(x, y - 65 * scale)
             assert snapshot(page)["selected"] == 0 and not snapshot(page)["moving"]
             checks.append("three sprite frames, independent expression preview and visible head selection")
+
+            idle_previews = set()
+            for cat_id, key in enumerate(["juzi", "pudding", "milkcap"]):
+                x, y, scale = ring_point(page, cat_id)
+                # The head is visible outside the circle, and selects this cat's own art.
+                page.mouse.click(x, y - 65 * scale)
+                assert snapshot(page)["selected"] == cat_id
+                assert not snapshot(page)["moving"]
+                page.click("#show-art")
+                assert page.locator("#art-title").inner_text().endswith(["橘子", "布丁", "奶盖"][cat_id])
+                poses = set()
+                for pose in range(3):
+                    page.click(f'[data-pose="{pose}"]')
+                    image = page.locator("#character-preview").evaluate("canvas => canvas.toDataURL()")
+                    poses.add(image)
+                    if pose == 0:
+                        idle_previews.add(image)
+                    page.locator("#character-preview").screenshot(path=str(artifacts / f"{key}-pose-{pose}.png"))
+                assert len(poses) == 3
+                page.click('[data-close="art-dialog"]')
+            assert len(idle_previews) == 3
+            checks.append("all three distinct cats: visible head selection and three independent expression previews")
 
             x, y, _ = ring_point(page, 1)
             page.mouse.click(x, y)
@@ -130,13 +158,17 @@ def run(url):
             launch(page)
             page.wait_for_function("window.miaoPlayground.snapshot().art.activeFrame === 1", polling="raf")
             assert set(snapshot(page)["art"]["reactingIds"]) == {0, 1}
+            assert all(cat["activeFrame"] == 1 for cat in snapshot(page)["art"]["characters"][:2])
             page.wait_for_function("window.miaoPlayground.snapshot().art.activeFrame === 2", polling="raf")
+            assert all(cat["activeFrame"] == 2 for cat in snapshot(page)["art"]["characters"][:2])
             page.click("#reset")
             assert snapshot(page)["art"]["activeFrame"] == 0
             checks.append("collision drives impact/rebound on both floats; reset clears reactions")
 
             page.select_option("#layout", "chain")
             launch(page)
+            page.wait_for_function("window.miaoPlayground.snapshot().art.characters[2].activeFrame === 1", polling="raf")
+            checks.append("Milkcap switches to impact expression during a real chain collision")
             page.click("#show-tuning")
             assert page.locator("#drag").is_disabled()
             page.keyboard.press("Escape")
@@ -212,7 +244,7 @@ def run(url):
             mobile_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
             mobile = mobile_context.new_page()
             mobile.on("pageerror", lambda error: errors.append(str(error)))
-            mobile.goto(url + "?locale=zh-CN")
+            mobile.goto(url + "?locale=zh-CN&mode=practice")
             mobile.wait_for_function("Boolean(window.miaoPlayground)")
             x, y, scale = ring_point(mobile)
             client = mobile_context.new_cdp_session(mobile)
@@ -232,15 +264,45 @@ def run(url):
             assert not errors, errors
             assert not external, external
             checks.append("page cleanup, no browser errors, no external requests")
+            for missing_id, key in enumerate(["juzi", "pudding", "milkcap"]):
+                fallback = context.new_page()
+                fallback.route(f"**/assets/{key}-expressions.png", lambda route: route.abort())
+                fallback.goto(url + "?locale=zh-CN&mode=practice")
+                fallback.wait_for_function("Boolean(window.miaoPlayground)")
+                cats = snapshot(fallback)["art"]["characters"]
+                assert [cat["loaded"] for cat in cats] == [i != missing_id for i in range(3)]
+                x, y, _ = ring_point(fallback, missing_id)
+                fallback.mouse.click(x, y)
+                fallback.click("#show-art")
+                assert not fallback.locator('[data-pose="0"]').is_enabled()
+                assert "占位泳圈" in fallback.locator("#art-note").inner_text()
+                fallback.keyboard.press("Escape")
+                launch(fallback, missing_id)
+                fallback.click("#reset")
+                fallback.close()
             fallback = context.new_page()
-            fallback.route("**/assets/juzi-expressions.png", lambda route: route.abort())
-            fallback.goto(url + "?locale=zh-CN")
+            fallback.route("**/assets/*-expressions.png", lambda route: route.abort())
+            fallback.goto(url + "?locale=zh-CN&mode=practice")
             fallback.wait_for_function("Boolean(window.miaoPlayground)")
-            assert not snapshot(fallback)["art"]["loaded"]
+            assert not any(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"])
             launch(fallback)
-            fallback.click("#reset")
             fallback.close()
-            checks.append("sprite-load failure preserves placeholder play")
+            checks.append("each sprite fails independently; other characters and fallback launches remain available, including all missing")
+            for missing in ["summer-pool.png", "summer-pool.json"]:
+                fallback = context.new_page()
+                fallback.on("pageerror", lambda error: errors.append(str(error)))
+                fallback.route(f"**/assets/{missing}", lambda route: route.abort())
+                fallback.goto(url + "?locale=zh-CN&mode=practice")
+                fallback.wait_for_function("Boolean(window.miaoPlayground)")
+                assert not snapshot(fallback)["map"]["loaded"]
+                assert all(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"])
+                launch(fallback)
+                fallback.click("#reset")
+                assert_viewport_fit(fallback)
+                fallback.screenshot(path=str(artifacts / f"fallback-{missing}.png"))
+                fallback.close()
+            checks.append("missing map image or metadata falls back independently without blocking characters or play")
+            assert not errors, errors
             context.close()
         finally:
             browser.close()

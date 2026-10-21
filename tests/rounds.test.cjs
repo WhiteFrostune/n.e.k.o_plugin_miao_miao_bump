@@ -4,7 +4,7 @@ const B = require('../static/battle.js');
 
 function shot(match, id) {
   assert.equal(match.launch(id, { x: id < 3 ? 20 : -20, y: 0 }), true);
-  while (match.phase === 'moving') match.advance(1000 / 60);
+  while (['moving', 'resolving'].includes(match.phase)) match.advance(1000 / 60);
   assert.equal(match.phase, 'ready');
 }
 
@@ -54,6 +54,8 @@ test('defeated unused cats lose their opportunity, exhausted teams skip, and the
   try {
     match.actors[1].hp = 0;
     match.actors[2].hp = 0;
+    for (const id of [1, 2]) Object.assign(match.actors[id], { removed: true, reviveAtRound: 3 });
+    match.world.remove([1, 2]);
     shot(match, 0);
     assert.equal(match.side, 1);
     assert.deepEqual(match.snapshot().remainingActions, [0, 3]);
@@ -97,11 +99,12 @@ test('CPU never selects an exhausted cat and returns no shot if none are eligibl
 });
 
 test('victory does not create another round; reset clears spent actions and restores the original opener', () => {
-  const match = new B.Match();
+  const match = new B.Match({ targetScore: 1 });
   try {
     assert.equal(match.launch(0, { x: 20, y: 0 }), true);
-    for (const cat of match.actors) if (cat.team === 1) cat.hp = 0;
-    while (match.phase === 'moving') match.advance(1000 / 60);
+    match.actors[3].hp = 24;
+    match.handleContact({ wall: false, ringIds: [0, 3] });
+    while (['moving', 'resolving'].includes(match.phase)) match.advance(1000 / 60);
     assert.equal(match.phase, 'over');
     assert.equal(match.round, 1);
     assert.equal(match.drainEvents().some(event => event.type === 'round'), false);

@@ -4,7 +4,7 @@ const P = require('../static/physics.js');
 const B = require('../static/battle.js');
 
 function settle(match, fps = 60) {
-  for (let frame = 0; match.phase === 'moving' && frame < fps * 46; frame += 1) match.advance(1000 / fps);
+  for (let frame = 0; ['moving', 'resolving'].includes(match.phase) && frame < fps * 46; frame += 1) match.advance(1000 / fps);
   assert.notEqual(match.phase, 'moving');
   assert.notEqual(match.phase, 'fault');
 }
@@ -55,22 +55,24 @@ test('Milkcap guard triggers only on the first valid hit in each enemy action an
   match.destroy();
 });
 
-test('zero HP immediately disables attacks and passives but leaves a physical body until settling', () => {
+test('zero HP immediately removes collision and scores once before settling', () => {
   const match = new B.Match();
   match.actors[3].hp = 24;
   match.launch(0, { x: 20, y: 0 });
   match.handleContact(hit(0, 3));
   assert.equal(match.actors[3].hp, 0);
-  assert.equal(match.world.snapshot().length, 6);
-  assert.equal(match.world.snapshot().find(cat => cat.id === 3).mass, 1);
+  assert.equal(match.world.snapshot().length, 5);
+  assert.equal(match.world.snapshot().find(cat => cat.id === 3), undefined);
+  assert.deepEqual(match.scores, [1, 0]);
   const events = match.drainEvents();
   match.handleContact(hit(1, 3));
   assert.equal(match.drainEvents().length, 0);
   assert.equal(events.filter(event => event.type === 'damage').length, 1);
+  assert.ok(events.some(event => event.type === 'retreat' && event.id === 3));
   settle(match);
   assert.equal(match.world.snapshot().length, 5);
   assert.equal(match.canLaunch(3), false);
-  assert.ok(match.drainEvents().some(event => event.type === 'retreat' && event.id === 3));
+  assert.equal(match.drainEvents().some(event => event.type === 'retreat'), false);
   // A defeated attacker is inert even if a stale physical impact arrives later.
   match.launch(4, { x: 20, y: 0 });
   match.handleContact(hit(3, 0));
@@ -80,12 +82,14 @@ test('zero HP immediately disables attacks and passives but leaves a physical bo
 
 test('victory and loss resolve only after settling, block more launches and restart cleanly', () => {
   for (const side of [0, 1]) {
-    const match = new B.Match();
+    const match = new B.Match({ targetScore: 1 });
     match.side = side;
     match.launch(side * 3, { x: 20, y: 0 });
-    for (const cat of match.actors) if (cat.team !== side) cat.hp = 0;
+    const target = (1 - side) * 3;
+    match.actors[target].hp = 24;
+    match.handleContact(hit(side * 3, target));
     assert.equal(match.winner, null);
-    assert.equal(match.world.snapshot().length, 6);
+    assert.equal(match.world.snapshot().length, 5);
     settle(match);
     assert.equal(match.phase, 'over');
     assert.equal(match.winner, side);
@@ -114,7 +118,7 @@ test('Juzi has more mass, while the same pull provides equal initial kinetic ene
   assert.ok(Math.abs(energies[0] - energies[1]) < 1e-6);
 });
 
-test('Pudding keeps more speed only on walls; defeat immediately removes that wall bonus', () => {
+test('Pudding keeps more speed only on walls; defeat immediately removes the body', () => {
   function bounce(bonus) {
     const world = new P.PoolWorld({ drag: 0.35 });
     world.reset('test', [{ id: 0, x: 750, y: 300, wallBonus: bonus }]);
@@ -128,7 +132,7 @@ test('Pudding keeps more speed only on walls; defeat immediately removes that wa
   const match = new B.Match();
   match.actors[4].hp = 24;
   match.launch(0, { x: 20, y: 0 }); match.handleContact(hit(0, 4));
-  assert.equal(match.world.rings.find(cat => cat.id === 4).body.plugin.wallBonus, 0);
+  assert.equal(match.world.rings.find(cat => cat.id === 4), undefined);
   match.destroy();
 });
 
@@ -138,7 +142,7 @@ test('real slow contacts below both former thresholds still damage, independentl
     match.world.reset('test', [{ id: 0, x: 300, y: 300, mass: 1.6 }, { id: 3, x: 385, y: 300, mass: 1.6 }]);
     match.launch(0, { x: speed, y: 0 });
     const damage = [];
-    while (match.phase === 'moving') {
+    while (['moving', 'resolving'].includes(match.phase)) {
       match.advance(1000 / 60);
       damage.push(...match.drainEvents().filter(event => event.type === 'damage'));
     }
@@ -173,7 +177,7 @@ test('both sides can bounce an opponent into an unselected stationary teammate f
     };
     match.launch(active, { x: side === 0 ? 800 : -800, y: 0 });
     const damage = [];
-    while (match.phase === 'moving') {
+    while (['moving', 'resolving'].includes(match.phase)) {
       match.advance(1000 / 60);
       damage.push(...match.drainEvents().filter(event => event.type === 'damage'));
     }
@@ -283,9 +287,11 @@ test('local AI completes whole games without deadlocks, invalid picks, tunneling
       assert.ok(shot && match.canLaunch(shot.id));
       assert.ok(match.launch(shot.id, shot));
       settle(match);
-      assert.ok(match.actors.filter(cat => cat.team === before.side).every(cat => cat.hp === before.actors[cat.id].hp));
+      assert.ok(match.actors.filter(cat => cat.team === before.side).every(cat => before.actors[cat.id].removed || cat.hp === before.actors[cat.id].hp));
       for (const ring of match.world.snapshot()) {
-        assert.ok(ring.x >= 83 && ring.x <= 877 && ring.y >= 83 && ring.y <= 517);
+        const b = match.map.world.bounds;
+        assert.ok(ring.x >= b.left + P.RADIUS - 1 && ring.x <= b.right - P.RADIUS + 1
+          && ring.y >= b.top + P.RADIUS - 1 && ring.y <= b.bottom - P.RADIUS + 1);
       }
     }
     assert.equal(match.phase, 'over', `stalled after ${actions} actions`);

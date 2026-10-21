@@ -13,7 +13,7 @@
   }
   function play(kind, strength = 1) {
     if (!enabled || !context || context.state !== 'running') return;
-    const tones = { launch: [380, 180], hit: [260, 110], guard: [780, 490], result: [520, 780] };
+    const tones = { launch: [380, 180], hit: [260, 110], guard: [780, 490], result: [520, 780], retreat: [650, 140], respawn: [220, 460] };
     const [start, end] = tones[kind] || tones.hit;
     const now = context.currentTime;
     const oscillator = context.createOscillator();

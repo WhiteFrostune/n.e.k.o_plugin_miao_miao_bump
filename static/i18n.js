@@ -32,7 +32,10 @@
     document.getElementById('language').value = locale;
   }
 
-  function t(key) { return messages[key] ?? english[key] ?? key; }
+  function t(key) {
+    const message = messages[key] ?? english[key] ?? key;
+    return message.replaceAll('{opponent}', messages['opponent.name'] ?? english['opponent.name'] ?? 'Opponent');
+  }
 
   async function init() {
     let desired = new URLSearchParams(location.search).get('locale');

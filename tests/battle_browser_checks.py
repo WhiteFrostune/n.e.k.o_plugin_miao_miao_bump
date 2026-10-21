@@ -6,7 +6,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import assert_viewport_fit, launch, ring_point, set_slider, snapshot
+from browser_checks import assert_viewport_fit, launch, ring_point, select_setting, set_slider, snapshot
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,9 +50,14 @@ def run(url):
             x, y, _ = ring_point(page, 3)
             page.mouse.click(x, y)
             assert snapshot(page)["selected"] == 0 and not snapshot(page)["aiming"]
+            before_selection = page.locator("#pool").bounding_box()
             x, y, scale = ring_point(page, 2)
             page.mouse.click(x, y - 65 * scale)
             assert snapshot(page)["selected"] == 2
+            assert not snapshot(page)["moving"]
+            assert not any(cat["usedThisRound"] for cat in snapshot(page)["battle"]["actors"])
+            after_selection = page.locator("#pool").bounding_box()
+            assert all(abs(after_selection[key] - before_selection[key]) < 1 for key in ["x", "y", "width", "height"])
             page.click("#show-art")
             assert "8" in page.locator("#skill-description").inner_text()
             page.keyboard.press("Escape")
@@ -67,13 +72,15 @@ def run(url):
             launch(page, shot["id"], shot["x"] / 1600 * 180, shot["y"] / 1600 * 180)
             page.wait_for_function("miaoPlayground.snapshot().battle.actors.some(c => c.team === 1 && c.hp < c.maxHp)")
             assert all(cat["hp"] == cat["maxHp"] for cat in snapshot(page)["battle"]["actors"] if cat["team"] == 0)
-            page.screenshot(path=str(artifacts / "battle-damage.png"))
+            # Wait for the CPU before taking a screenshot: accelerated frames can
+            # finish its whole turn while screenshot encoding is in progress.
             page.wait_for_function("miaoPlayground.snapshot().battle.side === 1 && miaoPlayground.snapshot().battle.phase === 'moving'")
-            assert "电脑" in page.locator("#state").inner_text()
+            assert page.evaluate("MiaoI18n.t('opponent.name')") in page.locator("#state").inner_text()
             checks.append("real shot causes opponent-only damage and CPU automatically takes the next turn")
 
             page.evaluate("Object.defineProperty(document, 'hidden', {configurable: true, value: true}); document.dispatchEvent(new Event('visibilitychange'))")
             before = snapshot(page)
+            page.screenshot(path=str(artifacts / "battle-damage.png"))
             page.wait_for_timeout(200)
             assert snapshot(page)["rings"] == before["rings"]
             page.evaluate("Object.defineProperty(document, 'hidden', {configurable: true, value: false}); document.dispatchEvent(new Event('visibilitychange'))")
@@ -85,13 +92,13 @@ def run(url):
             checks.append("visibility pauses the full battle; resetting a CPU turn cancels the old action")
 
             launch(page, 1, 140, 0)
-            page.select_option("#game-mode", "practice")
+            select_setting(page, "#game-mode", "practice")
             assert snapshot(page)["mode"] == "practice" and len(snapshot(page)["rings"]) == 3
             assert not snapshot(page)["moving"]
             page.click("#show-tuning")
             set_slider(page, "#drag", "1.2")
             page.keyboard.press("Escape")
-            page.select_option("#game-mode", "battle")
+            select_setting(page, "#game-mode", "battle")
             assert snapshot(page)["params"]["drag"] == 0.8
             assert snapshot(page)["battle"]["turn"] == 1
             checks.append("mode switch cancels the previous shot and practice settings do not leak into battles")
@@ -140,13 +147,21 @@ def run(url):
             assert state["battle"]["phase"] == "over"
             assert page.locator("#result-dialog").is_visible()
             assert state["battle"]["winner"] in [0, 1]
+            assert state["battle"]["targetScore"] == 5
+            assert state["battle"]["scores"][state["battle"]["winner"]] >= 5
+            assert state["battle"]["round"] > 1
+            assert not state["flights"]
+            assert f'{state["battle"]["scores"][0]} : {state["battle"]["scores"][1]}' in page.locator("#result-note").inner_text()
             assert all(cat["hp"] > 0 for cat in state["battle"]["actors"] if not cat["removed"])
             page.screenshot(path=str(artifacts / "battle-result.png"))
-            checks.append({"full browser match": {"player_shots": actions, "turn": state["battle"]["turn"], "winner": state["battle"]["winner"]}})
+            checks.append({"full browser match": {"player_shots": actions, "turn": state["battle"]["turn"],
+                "round": state["battle"]["round"], "scores": state["battle"]["scores"], "winner": state["battle"]["winner"]}})
             page.click("#play-again")
             assert not page.locator("#result-dialog").is_visible()
             assert snapshot(page)["battle"]["phase"] == "ready" and snapshot(page)["battle"]["turn"] == 1
             assert len(snapshot(page)["rings"]) == 6
+            assert snapshot(page)["battle"]["scores"] == [0, 0]
+            assert not snapshot(page)["flights"]
             assert all(cat["hp"] == cat["maxHp"] for cat in snapshot(page)["battle"]["actors"])
             checks.append("result dialog restarts a clean six-cat match")
             assert not errors, errors

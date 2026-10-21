@@ -6,7 +6,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import aim, assert_viewport_fit, launch, ring_point, snapshot
+from browser_checks import aim, assert_viewport_fit, launch, ring_point, select_setting, snapshot
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +28,7 @@ def run(url):
             source = (ROOT / "static/battle.js").read_text(encoding="utf-8")
             # Keep real Match and pointer input, but use harmless CPU shots to
             # inspect a whole round without depending on combat balance.
-            source = source.replace("return { Match, ROLES, chooseShot };", """return { Match, ROLES, chooseShot: state => {
+            source = source.replace("return { Match, ROLES, chooseShot, respawnPoint, FLIGHT_DURATION };", """return { Match, ROLES, chooseShot: state => {
                 const cat = state.actors.find(c => c.team === state.side && c.hp > 0 && !c.removed && !c.usedThisRound);
                 return cat ? {id: cat.id, x: -80, y: 0} : null;
             } };""")
@@ -90,9 +90,9 @@ def run(url):
             state = snapshot(page)["battle"]
             assert state["round"] == 1 and state["roundStarter"] == 0 and state["side"] == 0
             assert state["remainingActions"] == [3, 3]
-            page.select_option("#game-mode", "practice")
+            select_setting(page, "#game-mode", "practice")
             assert page.locator("#round-status").is_hidden()
-            page.select_option("#game-mode", "battle")
+            select_setting(page, "#game-mode", "battle")
             assert snapshot(page)["battle"]["remainingActions"] == [3, 3]
             checks.append("reset and mode changes clear round state; practice has no round restrictions")
             assert not errors, errors

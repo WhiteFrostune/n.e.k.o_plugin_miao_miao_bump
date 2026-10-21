@@ -41,6 +41,15 @@ def launch(page, ring_id=0, pull_x=180, pull_y=0):
     page.wait_for_function("window.miaoPlayground.snapshot().moving", timeout=3000)
 
 
+def select_setting(page, selector, value):
+    """Mode/layout live in the Settings dialog, opened through the real button."""
+    if not page.locator("#tuning-dialog").is_visible():
+        page.click("#show-tuning")
+    page.select_option(selector, value)
+    if page.locator("#tuning-dialog").is_visible():
+        page.keyboard.press("Escape")
+
+
 def set_slider(page, selector, value):
     page.locator(selector).evaluate(
         "(element, value) => { element.value = value; element.dispatchEvent(new Event('input', {bubbles: true})); }",
@@ -50,7 +59,7 @@ def set_slider(page, selector, value):
 
 def assert_viewport_fit(page):
     viewport = page.viewport_size
-    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), page.evaluate("({locale:document.documentElement.lang,width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth})")
     assert page.evaluate("document.documentElement.scrollHeight <= innerHeight + 1")
     pool = page.locator("#pool").bounding_box()
     controls = page.locator(".controls").bounding_box()
@@ -157,7 +166,7 @@ def run(url):
             assert not snapshot(page)["moving"]
             checks.append("click selection, Escape, context-menu and pointer-cancel")
 
-            page.select_option("#layout", "duel")
+            select_setting(page, "#layout", "duel")
             launch(page)
             page.wait_for_function("window.miaoPlayground.snapshot().art.activeFrame === 1", polling="raf")
             assert set(snapshot(page)["art"]["reactingIds"]) == {0, 1}
@@ -170,7 +179,7 @@ def run(url):
             assert snapshot(page)["art"]["activeFrame"] == 0
             checks.append("collision drives impact/rebound on both floats; reset clears reactions")
 
-            page.select_option("#layout", "chain")
+            select_setting(page, "#layout", "chain")
             launch(page)
             page.wait_for_function("window.miaoPlayground.snapshot().art.characters[2].activeFrame === 1", polling="raf")
             checks.append("Milkcap switches to impact expression during a real chain collision")
@@ -215,7 +224,7 @@ def run(url):
                 assert_viewport_fit(page)
             checks.append("tuning, default restore, all eight locales")
 
-            page.select_option("#layout", "wall")
+            select_setting(page, "#layout", "wall")
             launch(page)
             page.evaluate("Object.defineProperty(document, 'hidden', {configurable: true, value: true}); document.dispatchEvent(new Event('visibilitychange'))")
             paused = snapshot(page)
@@ -272,7 +281,7 @@ def run(url):
             for missing_id, key in enumerate(["juzi", "pudding", "milkcap"]):
                 fallback = context.new_page()
                 fallback.route(f"**/assets/{key}-expressions.png", lambda route: route.abort())
-                fallback.goto(url + "?locale=zh-CN&mode=practice")
+                fallback.goto(url + "?locale=zh-CN&mode=practice&art=classic")
                 fallback.wait_for_function("Boolean(window.miaoPlayground)")
                 cats = snapshot(fallback)["art"]["characters"]
                 assert [cat["loaded"] for cat in cats] == [i != missing_id for i in range(3)]
@@ -287,7 +296,7 @@ def run(url):
                 fallback.close()
             fallback = context.new_page()
             fallback.route("**/assets/*-expressions.png", lambda route: route.abort())
-            fallback.goto(url + "?locale=zh-CN&mode=practice")
+            fallback.goto(url + "?locale=zh-CN&mode=practice&art=classic")
             fallback.wait_for_function("Boolean(window.miaoPlayground)")
             assert not any(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"])
             launch(fallback)
@@ -297,7 +306,7 @@ def run(url):
                 fallback = context.new_page()
                 fallback.on("pageerror", lambda error: errors.append(str(error)))
                 fallback.route(f"**/assets/{missing}", lambda route: route.abort())
-                fallback.goto(url + "?locale=zh-CN&mode=practice")
+                fallback.goto(url + "?locale=zh-CN&mode=practice&art=classic")
                 fallback.wait_for_function("Boolean(window.miaoPlayground)")
                 assert not snapshot(fallback)["map"]["loaded"]
                 assert all(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"])

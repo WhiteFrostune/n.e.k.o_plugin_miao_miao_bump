@@ -120,14 +120,14 @@
 
   register({ schemaVersion: 1, id: DEFAULT_ID, nameKey: 'map.summerPool',
     art: { metadata: 'assets/summer-pool.json' },
-    world: { width: 960, height: 600, bounds: { left: 44, top: 44, right: 916, bottom: 556 } },
-    spawns: [[{ x: 200, y: 160 }, { x: 300, y: 300 }, { x: 200, y: 440 }],
-      [{ x: 760, y: 160 }, { x: 660, y: 300 }, { x: 760, y: 440 }]],
-    spawnRegions: [{ left: 84, top: 84, right: 440, bottom: 516 },
-      { left: 520, top: 84, right: 876, bottom: 516 }],
+    world: { width: 1200, height: 636, bounds: { left: 36, top: 36, right: 1164, bottom: 600 } },
+    spawns: [[{ x: 270, y: 200 }, { x: 400, y: 350 }, { x: 270, y: 500 }],
+      [{ x: 930, y: 200 }, { x: 800, y: 350 }, { x: 930, y: 500 }]],
+    spawnRegions: [{ left: 76, top: 120, right: 560, bottom: 560 },
+      { left: 640, top: 120, right: 1124, bottom: 560 }],
     practiceLayouts: {
-      free: [[250, 345], [500, 235], [715, 365]], wall: [[300, 300]],
-      duel: [[260, 300], [615, 300]], chain: [[220, 300], [480, 300], [735, 300]],
+      free: [[250, 370], [500, 250], [715, 400]], wall: [[300, 318]],
+      duel: [[260, 318], [615, 318]], chain: [[220, 318], [480, 318], [735, 318]],
       corner: [[86, 86], [168, 86], [86, 168]],
     }, colliders: [], mechanics: [],
   });

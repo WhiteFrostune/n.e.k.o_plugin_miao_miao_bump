@@ -6,7 +6,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import assert_viewport_fit, launch, ring_point, snapshot
+from browser_checks import assert_viewport_fit, launch, ring_point, select_setting, snapshot
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,9 +65,9 @@ def run(url):
             checks.append("square geometry drives actual art, spawn positions, visible-head input and CPU turn")
 
             page.click("#reset")
-            page.select_option("#game-mode", "practice")
+            select_setting(page, "#game-mode", "practice")
             assert snapshot(page)["map"]["id"] == "test-square"
-            page.select_option("#layout", "wall")
+            select_setting(page, "#layout", "wall")
             page.click("#reset")
             assert [(cat["x"], cat["y"]) for cat in snapshot(page)["rings"]] == [(400, 400)]
             launch(page, 0, 160, 0)

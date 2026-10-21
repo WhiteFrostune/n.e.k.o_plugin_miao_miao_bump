@@ -44,14 +44,35 @@ test('aim prediction uses the moving circle radius and stops at the first ring',
   world.destroy();
 });
 
-test('default full-power wall shot bounces repeatedly and naturally settles', () => {
-  const world = simulate('wall', { x: 1600, y: 260 });
-  assert.equal(world.moving, false);
-  assert.equal(world.fault, false);
-  assert.ok(world.count >= 3, `only ${world.count} impacts`);
-  assert.ok(world.elapsed >= 4 && world.elapsed <= 7, `time=${world.elapsed}`);
-  assert.ok(world.snapshot().every(ring => ring.vx === 0 && ring.vy === 0));
-  world.destroy();
+test('historical wide pool shallow and diagonal wall shots retain their rebounds and settle', () => {
+  // A wide rectangle has fewer crossings along its long axis. Keep a shallow
+  // shot check and require several rebounds for an equal-speed diagonal shot.
+  for (const [velocity, minimum] of [[{ x: 1600, y: 260 }, 2],
+    [{ x: 1200, y: Math.sqrt(1600 ** 2 - 1200 ** 2) }, 3]]) {
+    const world = simulate('wall', velocity, { map: require('./fixtures/wide-pool.json') });
+    assert.equal(world.moving, false);
+    assert.equal(world.fault, false);
+    assert.ok(world.count >= minimum, `only ${world.count} impacts`);
+    assert.ok(world.elapsed >= 4 && world.elapsed <= 7, `time=${world.elapsed}`);
+    assert.ok(world.snapshot().every(ring => ring.vx === 0 && ring.vy === 0));
+    world.destroy();
+  }
+});
+
+test('deeper pool keeps multi-rebound diagonal shots and finite water resistance without changing tuning', () => {
+  // Longer vertical distances legitimately change shallow-shot contact counts.
+  // Preserve the old map above, and check the new arena's actual travel separately.
+  for (const [velocity, minimum] of [[{ x: 1600, y: 260 }, 1],
+    [{ x: 1200, y: Math.sqrt(1600 ** 2 - 1200 ** 2) }, 3], [{ x: 260, y: 1600 }, 3]]) {
+    const world = simulate('wall', velocity);
+    try {
+      assert.equal(world.moving, false);
+      assert.equal(world.fault, false);
+      assert.ok(world.count >= minimum, `only ${world.count} impacts`);
+      assert.ok(world.elapsed >= 4 && world.elapsed <= 7);
+      assert.ok(world.snapshot().every(ring => ring.vx === 0 && ring.vy === 0));
+    } finally { world.destroy(); }
+  }
 });
 
 test('a small shot travels less than a strong shot before the first wall', () => {

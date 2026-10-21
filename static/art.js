@@ -4,6 +4,24 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
+  function flightAt(event, age, map, reducedMotion = false) {
+    const t = Math.max(0, Math.min(1, age / event.duration));
+    const d = event.direction;
+    const { bounds: b, width, height } = map.world;
+    const distances = [];
+    if (d.x > 1e-8) distances.push((b.right + 70 - event.x) / d.x);
+    if (d.x < -1e-8) distances.push((b.left - 70 - event.x) / d.x);
+    if (d.y > 1e-8) distances.push((b.bottom + 70 - event.y) / d.y);
+    if (d.y < -1e-8) distances.push((b.top - 70 - event.y) / d.y);
+    const distance = reducedMotion ? 28 : Math.max(28, Math.min(...distances));
+    const progress = t * t;
+    const lift = reducedMotion ? 0 : Math.sin(Math.PI * t) * Math.min(width, height) * 0.17;
+    return { x: event.x + d.x * distance * progress, y: event.y + d.y * distance * progress - lift,
+      shadowX: event.x + d.x * distance * progress, shadowY: event.y + d.y * distance * progress,
+      rotation: reducedMotion ? 0 : (d.x < 0 ? -1 : 1) * t * 0.7,
+      scale: 1 - t * (reducedMotion ? 0.05 : 0.4), alpha: Math.min(1, (1 - t) / 0.3) };
+  }
+
   function reactionAt(age, strength = 1, reducedMotion = false) {
     if (age < 0 || age >= 0.48) return { frame: 0, along: 1, across: 1, lean: 0 };
     const amount = Math.max(0, Math.min(1, strength));
@@ -40,11 +58,25 @@
     return image;
   }
 
-  async function load(character = 'juzi') {
-    const metadataUrl = new URL(`assets/${character}.json`, document.baseURI);
+  async function load(character = 'juzi', artSet = 'concept-v2') {
+    const selected = artSet === 'classic' ? 'classic' : 'concept-v2';
+    try {
+      return await loadCharacter(character, selected);
+    } catch (error) {
+      if (selected === 'classic') throw error;
+      const fallback = await loadCharacter(character, 'classic');
+      fallback.fallbackFrom = selected;
+      return fallback;
+    }
+  }
+
+  async function loadCharacter(character, artSet) {
+    const directory = artSet === 'classic' ? 'assets' : 'assets/characters/concept-v2';
+    const metadataUrl = new URL(`${directory}/${character}.json`, document.baseURI);
     const response = await fetch(metadataUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error('Character metadata unavailable');
     const metadata = await response.json();
+    metadata.artSet = artSet;
     const image = new Image();
     image.src = new URL(metadata.image, metadataUrl).href;
     await image.decode();
@@ -66,6 +98,20 @@
 
     return {
       metadata,
+      drawPortrait(context) {
+        const frame = frames[0];
+        // Keep the head-top cat and face on the same sampled game-pixel grid.
+        // Optional metadata lets replacement art adjust its own portrait crop.
+        const crop = metadata.portraitBox || { x: 0, y: 0, width: frame.width, height: Math.min(frame.width, frame.height) };
+        const resolution = metadata.portraitResolution || 48;
+        if (context.canvas.width !== resolution || context.canvas.height !== resolution) {
+          context.canvas.width = resolution;
+          context.canvas.height = resolution;
+        }
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+        context.imageSmoothingEnabled = false;
+        context.drawImage(frame, crop.x, crop.y, crop.width, crop.height, 0, 0, context.canvas.width, context.canvas.height);
+      },
       draw(context, frameIndex = 0, lean = 0) {
         const frame = frames[frameIndex] || frames[0];
         context.save();
@@ -84,7 +130,28 @@
     };
   }
 
-  async function loadPool(definition) {
+  async function loadUiSurfaces() {
+    const url = new URL('assets/ui/side-surfaces.json', document.baseURI);
+    const response = await fetch(url, { cache: 'no-cache' });
+    if (!response.ok) throw new Error('UI surfaces unavailable');
+    const definitions = await response.json();
+    const entries = await Promise.all(Object.entries(definitions).map(async ([name, asset]) => {
+      const image = new Image();
+      image.src = new URL(asset.image, url).href;
+      await image.decode();
+      const { x, y, width, height } = asset.crop;
+      if (![x, y, width, height].every(Number.isFinite) || x < 0 || y < 0 || width <= 0 || height <= 0
+        || x + width > image.naturalWidth || y + height > image.naturalHeight) throw new Error('Invalid UI crop');
+      // Sample source artwork at runtime, preserving the original PNG files.
+      const surface = document.createElement('canvas');
+      surface.width = width; surface.height = height;
+      surface.getContext('2d').drawImage(image, x, y, width, height, 0, 0, width, height);
+      return [name, `url("${surface.toDataURL()}")`];
+    }));
+    return Object.fromEntries(entries);
+  }
+
+  async function loadPool(definition, { classicWater = false } = {}) {
     if (!definition.art) throw new Error('Map uses procedural art');
     const { bounds, width, height } = definition.world;
     const metadataUrl = new URL(definition.art.metadata, document.baseURI);
@@ -129,11 +196,39 @@
       dx[1], dy[1], dx[2] - dx[1], dy[2] - dy[1]);
     context.strokeStyle = '#438eaa'; context.lineWidth = 1;
     context.strokeRect(dx[1] - 0.5, dy[1] - 0.5, dx[2] - dx[1] + 1, dy[2] - dy[1] + 1);
+    let surface = null;
+    if (metadata.waterSurface && !classicWater) {
+      try {
+        const source = metadata.waterSurface;
+        const size = source.pixelGrid;
+        if (!size || ![size.width, size.height].every(n => Number.isInteger(n) && n >= 64 && n <= 2048)) {
+          throw new Error('Invalid water surface grid');
+        }
+        const texture = new Image();
+        texture.src = new URL(source.image, metadataUrl).href;
+        await texture.decode();
+        surface = document.createElement('canvas');
+        surface.width = size.width; surface.height = size.height;
+        const painter = surface.getContext('2d');
+        painter.imageSmoothingEnabled = false;
+        painter.drawImage(texture, 0, 0, surface.width, surface.height);
+      } catch {
+        // An independent surface is optional: keep the original rim and water.
+        surface = null;
+      }
+    }
     return {
+      waterStyle: surface ? 'clear-v2' : 'classic',
       draw(target) {
         target.save();
         target.imageSmoothingEnabled = false;
         target.drawImage(map, 0, 0, width, height);
+        if (surface) {
+          // Keep broad underwater light fixed. Translating the entire bitmap
+          // made the pool look like a sliding membrane; local ripples live in game.js.
+          target.beginPath(); target.rect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top); target.clip();
+          target.drawImage(surface, bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
+        }
         target.restore();
       },
     };
@@ -166,5 +261,5 @@
     context.restore();
   }
 
-  return { load, loadPool, drawPoolFallback, reactionAt, floatImage };
+  return { load, loadPool, loadUiSurfaces, drawPoolFallback, reactionAt, floatImage, flightAt };
 });

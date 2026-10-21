@@ -113,6 +113,8 @@
       this._lastImpacts = new Map();
       this._velocities = new Map();
       this._contacts = new Map();
+      this._pendingRemoval = new Set();
+      this._stepping = false;
       const wallOptions = { isStatic: true, friction: 0, frictionStatic: 0, restitution: this.params.wallBounce };
       const { width, height, bounds } = this.map.world;
       const walls = [
@@ -123,7 +125,14 @@
       ];
       Composite.add(this.engine.world, walls);
       const placements = actors || layouts[layout].map(([x, y], id) => ({ x, y, id }));
-      this.rings = placements.map(({ x, y, id, mass = 1, wallBonus = 0 }) => {
+      this.rings = [];
+      this.add(placements);
+    }
+
+    add(actors) {
+      if (this.moving) return false;
+      for (const { x, y, id, mass = 1, wallBonus = 0 } of actors) {
+        if (this.rings.some(ring => ring.id === id)) continue;
         const body = Bodies.circle(x, y, RADIUS, {
           friction: 0, frictionStatic: 0, frictionAir: 0, restitution: this.params.bounce,
           inertia: Infinity, slop: 0.01, label: `ring-${id}`,
@@ -132,8 +141,9 @@
         body.plugin.ringId = id;
         body.plugin.wallBonus = wallBonus;
         Composite.add(this.engine.world, body);
-        return { id, body };
-      });
+        this.rings.push({ id, body });
+      }
+      return true;
     }
 
     disablePassives(id) {
@@ -144,14 +154,42 @@
     }
 
     remove(ids) {
-      if (this.moving) return false;
-      const removed = new Set(ids);
+      for (const id of ids) {
+        this._pendingRemoval.add(id);
+        const body = this.rings.find(ring => ring.id === id)?.body;
+        if (!body) continue;
+        // A lethal contact can arrive inside Engine.update. Disable its remaining
+        // solver pairs now; mutate the body collection only at the step boundary.
+        body.isSensor = true;
+        for (const pair of this.engine.pairs.list) {
+          if (pair.bodyA === body || pair.bodyB === body) pair.isSensor = true;
+        }
+      }
+      if (!this._stepping) this._flushRemoval();
+      return true;
+    }
+
+    _flushRemoval() {
+      if (!this._pendingRemoval.size) return;
+      const removed = this._pendingRemoval;
+      const bodies = new Set(this.rings.filter(ring => removed.has(ring.id)).map(ring => ring.body.id));
       for (const ring of this.rings) if (removed.has(ring.id)) Composite.remove(this.engine.world, ring.body);
       this.rings = this.rings.filter(ring => !removed.has(ring.id));
       for (const [key, contact] of this._contacts) {
         if (removed.has(contact.a.plugin.ringId) || removed.has(contact.b.plugin.ringId)) this._contacts.delete(key);
       }
-      return true;
+      for (const id of bodies) this._velocities.delete(id);
+      const pairs = this.engine.pairs;
+      for (const key of ['list', 'collisionStart', 'collisionActive', 'collisionEnd']) {
+        pairs[key] = pairs[key].filter(pair => !bodies.has(pair.bodyA.id) && !bodies.has(pair.bodyB.id));
+      }
+      for (const [key, pair] of Object.entries(pairs.table)) {
+        if (bodies.has(pair.bodyA.id) || bodies.has(pair.bodyB.id)) delete pairs.table[key];
+      }
+      for (const key of this._lastImpacts.keys()) {
+        if (key.split(':').some(id => bodies.has(Number(id)))) this._lastImpacts.delete(key);
+      }
+      removed.clear();
     }
 
     launch(id, velocity) {
@@ -174,6 +212,7 @@
 
     _collisions(pairs, started) {
       for (const pair of pairs) {
+        if (this._pendingRemoval.has(pair.bodyA.plugin.ringId) || this._pendingRemoval.has(pair.bodyB.plugin.ringId)) continue;
         const wall = pair.bodyA.isStatic || pair.bodyB.isStatic;
         // Matter defaults to max(A.restitution, B.restitution); use independent controls.
         const dynamic = pair.bodyA.isStatic ? pair.bodyB : pair.bodyA;
@@ -223,7 +262,9 @@
         this._velocities.set(body.id, { x: v.x * 60, y: v.y * 60 });
         Body.setVelocity(body, { x: v.x * decay, y: v.y * decay });
       }
-      Engine.update(this.engine, STEP_MS);
+      this._stepping = true;
+      try { Engine.update(this.engine, STEP_MS); }
+      finally { this._stepping = false; this._flushRemoval(); }
       this.maxSpeed = 0;
       for (const { body } of this.rings) this.maxSpeed = Math.max(this.maxSpeed, Body.getSpeed(body) * 60);
       this.quietTime = this.maxSpeed < STOP_SPEED ? this.quietTime + dt : 0;

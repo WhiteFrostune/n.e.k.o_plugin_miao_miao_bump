@@ -58,4 +58,5 @@ def test_frames_have_transparency_and_do_not_crop_opaque_pixels(character: str, 
 def test_original_character_files_remain_byte_for_byte_available() -> None:
     hashes = json.loads((ROOT / "docs/art/classic-assets-sha256.json").read_text(encoding="utf-8"))
     for filename, expected in hashes.items():
+        assert "\\" not in filename, "Asset manifest paths must use portable forward slashes"
         assert hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() == expected

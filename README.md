@@ -23,7 +23,7 @@
 
 ## 安装与打开
 
-从仓库的 [Releases 页面](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases) 获取 `miao_miao_bump-0.1.0.neko-plugin`，在 N.E.K.O 的插件管理器中导入。安装后刷新列表，启动「喵喵碰碰大作战」，点击游戏入口即可打开。
+下载 [miao_miao_bump.neko-plugin（v0.1.0）](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases/download/v0.1.0/miao_miao_bump.neko-plugin)，在 N.E.K.O 的插件管理器中导入。安装后刷新列表，启动「喵喵碰碰大作战」，点击游戏入口即可打开。版本说明与校验文件见 [Releases 页面](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases)。
 
 源码方式：将本仓库放在 N.E.K.O 的 `plugin/plugins/miao_miao_bump/` 目录，再刷新插件列表并启动。目录已经存在时继续使用原目录，避免重复克隆。
 

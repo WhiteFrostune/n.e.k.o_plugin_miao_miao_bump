@@ -6,7 +6,7 @@
 
 这是为 [N.E.K.O](https://github.com/Project-N-E-K-O/N.E.K.O) 制作的本机三对三猫娘泳圈小游戏，玩法灵感来自《崩坏：星穹铁道》的「豹豹碰碰大作战」。
 
-**版本 0.2.0** · **作者 [WhiteFrostune](https://github.com/WhiteFrostune)**
+**版本 0.2.1** · **作者 [WhiteFrostune](https://github.com/WhiteFrostune)**
 
 ![喵喵碰碰大作战 0.2.0 对局实机画面](docs/art/v0.2.0-battle.png)
 
@@ -25,9 +25,9 @@
 
 ## 安装与打开
 
-从 v0.2.0 的 Release 下载 **miao_miao_bump.neko-plugin**，在 N.E.K.O 的插件管理器中导入。安装后刷新列表，启动「喵喵碰碰大作战」，点击游戏入口进入备战大厅。下载页同时提供安装包的 SHA-256 校验文件。
+从 v0.2.1 的 Release 下载 **miao_miao_bump.neko-plugin**，在 N.E.K.O 的插件管理器中导入。安装后刷新列表，启动「喵喵碰碰大作战」，点击游戏入口进入备战大厅。下载页同时提供安装包的 SHA-256 校验文件。
 
-[下载安装包](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases/download/v0.2.0/miao_miao_bump.neko-plugin) · [下载 SHA256SUMS.txt](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases/download/v0.2.0/SHA256SUMS.txt)
+[下载安装包](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases/download/v0.2.1/miao_miao_bump.neko-plugin) · [下载 SHA256SUMS.txt](https://github.com/WhiteFrostune/n.e.k.o_plugin_miao_miao_bump/releases/download/v0.2.1/SHA256SUMS.txt)
 
 源码方式：将本仓库放在 N.E.K.O 的 `plugin/plugins/miao_miao_bump/` 目录，再刷新插件列表并启动。目录已经存在时继续使用原目录，避免重复克隆。
 
@@ -97,7 +97,7 @@ uv run neko-plugin build miao_miao_bump
 uvx ruff==0.12.4 check --ignore-noqa --config ruff.toml .
 ```
 
-- [更新日志](CHANGELOG.md) · [0.2.0 发布说明](docs/releases/v0.2.0.md)
+- [更新日志](CHANGELOG.md) · [0.2.1 发布说明](docs/releases/v0.2.1.md)
 - [0.2.0 规划与验收](docs/ROADMAP_0.2.0.md) · [备战与对局界面](docs/PREPARATION_UI_0.2.0.md)
 - [地图扩展接口](docs/MAPS.md) · [两侧 UI 与比例](docs/UI_SIDE_HUD.md)
 - [美术来源与替换说明](docs/art/README.md) · [角色资源替换约定](docs/art/ASSET_REPLACEMENT.md)

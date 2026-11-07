@@ -1,4 +1,8 @@
 /* Selected side-HUD concept. Keep composition separate from art and combat. */
+#knockout-layer {
+  position: fixed; inset: 0; width: 100%; height: 100%; aspect-ratio: auto;
+  pointer-events: none; z-index: 10; cursor: default; background: transparent;
+}
 body { background-image: url("assets/ui/beach-surround-side-v1.png"); }
 .app .controls::before { display: none; }
 .app .stat-chip { min-width: 0; }
@@ -160,3 +164,7 @@ body { background-image: url("assets/ui/beach-surround-side-v1.png"); }
   .app .stage-slot { height: min(calc((100vw - 16px) / var(--map-aspect, 1.887)), max(80px, calc(100dvh - 370px))); }
   .app .workspace { gap: 8px; }
 }
+#tuning-dialog .motion-options { display: grid; grid-template-columns: auto minmax(130px, 1fr); gap: 8px 12px; align-items: center; padding: 12px 0; }
+#tuning-dialog .motion-options label { display: block; font-size: 13px; }
+#tuning-dialog .motion-options p { grid-column: 1 / -1; margin: 0; font-size: 12px; }
+#tuning-dialog .motion-options .boundary-control { grid-column: 1 / -1; display: flex; gap: 7px; align-items: center; margin-top: 6px; }

@@ -6,7 +6,16 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import aim, assert_viewport_fit, launch, ring_point, select_setting, snapshot
+from browser_checks import (
+    aim,
+    assert_viewport_fit,
+    enable_dev_controls,
+    launch,
+    restart_pool,
+    ring_point,
+    select_setting,
+    snapshot,
+)
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +29,7 @@ def run(url):
         browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(viewport={"width": 1366, "height": 768})
+            enable_dev_controls(context)
             context.add_init_script("""(() => {
                 const original = window.requestAnimationFrame.bind(window);
                 let time = 0;
@@ -32,7 +42,7 @@ def run(url):
                 const cat = state.actors.find(c => c.team === state.side && c.hp > 0 && !c.removed && !c.usedThisRound);
                 return cat ? {id: cat.id, x: -80, y: 0} : null;
             } };""")
-            context.route("**/battle.js", lambda route: route.fulfill(body=source, content_type="text/javascript"))
+            context.route("**/battle.js*", lambda route: route.fulfill(body=source, content_type="text/javascript"))
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(url + "?locale=zh-CN")
@@ -86,7 +96,7 @@ def run(url):
             page.screenshot(path=str(artifacts / "rounds-mobile.png"))
             checks.append("round and opportunity labels fit all eight viewports and all eight mobile locales")
 
-            page.click("#reset")
+            restart_pool(page)
             state = snapshot(page)["battle"]
             assert state["round"] == 1 and state["roundStarter"] == 0 and state["side"] == 0
             assert state["remainingActions"] == [3, 3]

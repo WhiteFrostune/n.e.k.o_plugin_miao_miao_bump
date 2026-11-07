@@ -1,0 +1,29 @@
+:root { color-scheme: only light; font-family: "Microsoft YaHei", system-ui, sans-serif; color: #36545d; background: #f8f4e9; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { width: min(1420px, 96vw); margin: 0 auto; padding: 20px 0 12px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+h1 { margin: 4px 0 0; font-size: 24px; }
+.eyebrow { margin: 0; font-size: 12px; color: #8c7960; }
+.badge { padding: 7px 12px; border: 1px solid #dfcdb2; border-radius: 20px; background: #fffaf0; font-size: 12px; }
+.toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+label { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+select, button { font: inherit; color: inherit; border: 1px solid #d3d9d3; border-radius: 8px; background: #fffdf7; padding: 8px 10px; }
+button { cursor: pointer; }
+button:hover, button[aria-current="true"] { border-color: #53aaa9; background: #e7f7f3; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #5cb9ba; outline-offset: 2px; }
+.stage { position: relative; height: clamp(300px, calc(100dvh - 340px), 630px); border-radius: 18px; overflow: hidden; background: #f4efdf; border: 1px solid #ded8c9; }
+canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+#loading { position: absolute; inset: 45% 0 auto; text-align: center; }
+.stage-label, .phase-tag { position: absolute; top: 13px; padding: 6px 12px; border-radius: 16px; background: #fffdf3eb; font-size: 12px; pointer-events: none; }
+.stage-label { left: 14px; } .phase-tag { right: 14px; color: #946135; }
+.playback { display: flex; align-items: center; gap: 18px; padding-top: 12px; }
+.buttons { display: flex; gap: 7px; white-space: nowrap; font-size: 13px; }
+#play { min-width: 64px; background: #e4f4ef; }
+.scrubber { flex: 1; } .scrubber input { flex: 1; accent-color: #349c99; min-width: 90px; }
+#time { width: 62px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.beats { display: flex; gap: 8px; margin-top: 10px; font-size: 12px; flex-wrap: wrap; }
+footer p { margin: 10px 0 0; font-size: 12px; line-height: 1.7; }
+.quiet { color: #83908b; } details { color: #83908b; font-size: 11px; margin-top: 6px; }
+pre { white-space: pre-wrap; }
+@media (max-width: 850px) { main { padding-top: 12px; } h1 { font-size: 20px; } .badge { max-width: 160px; font-size: 10px; } .toolbar { gap: 8px; } select { max-width: 200px; padding: 6px; } .playback { flex-wrap: wrap; gap: 10px; } .scrubber { flex-basis: 55%; } .stage { height: 380px; } }

@@ -2,6 +2,10 @@
   "image": "juzi-expressions.png",
   "artSet": "concept-v2",
   "integratedFloat": true,
+  "knockout": "../knockout-v1/juzi.json",
+  "knockoutPoses": "../knockout-poses-v1/juzi.json",
+  "unseat": "../unseat-v1/juzi.json",
+  "opening": "../opening-v1/juzi.json",
   "frames": [
     {
       "name": "idle",
@@ -54,5 +58,7 @@
       "y": 555
     },
     "diameterInWorld": 80
-  }
+  },
+  "knockoutV2": "../unseat-v2/juzi-split.json",
+  "unseatV2": "../unseat-v2/juzi.json"
 }

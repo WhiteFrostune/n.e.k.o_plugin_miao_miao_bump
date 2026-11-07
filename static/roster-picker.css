@@ -1,0 +1,185 @@
+.roster-picker {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  border: 0;
+  background: #173961;
+  color: #193c62;
+}
+.roster-picker[open] { display: grid; }
+.picker-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  min-height: 100%;
+}
+.picker-back {
+  position: absolute;
+  top: clamp(10px, 2vw, 22px);
+  right: clamp(10px, 2vw, 22px);
+  z-index: 1;
+}
+.picker-back, .picker-confirmation button {
+  padding: 7px 13px;
+  border: 1px solid #a1cadc;
+  border-radius: 999px;
+  background: #effaff;
+  color: #174571;
+  font-weight: 800;
+  cursor: pointer;
+}
+.picker-library {
+  padding: clamp(16px, 3.4vh, 33px) clamp(12px, 1.7vw, 27px);
+  background: #e0f5fd;
+}
+.picker-library h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 clamp(9px, 2vh, 19px);
+  font-size: clamp(14px, 1.35vw, 20px);
+  font-weight: 800;
+}
+.picker-library h2::before, .picker-library h2::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid #9fcadd;
+}
+.picker-cats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: clamp(5px, .7vw, 10px);
+  max-height: 80dvh;
+  overflow: auto;
+  padding: 3px;
+}
+.picker-cat {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  gap: 1px;
+  padding: 3px 3px 0;
+  overflow: hidden;
+  border: 2px solid #baddeb;
+  border-radius: 13px;
+  background: #effaff;
+  color: #23476d;
+  cursor: pointer;
+}
+.picker-cat[aria-pressed="true"] {
+  border-color: #5099ce;
+  background: #c9ebff;
+}
+.picker-cat.is-previewed {
+  border-color: #176fb5;
+  box-shadow: inset 0 0 0 2px #8ad9ff;
+}
+.picker-cat:focus-visible { outline-offset: 1px; }
+.picker-cat canvas {
+  display: block;
+  width: min(100%, 104px);
+  aspect-ratio: 1;
+  height: auto;
+  image-rendering: pixelated;
+}
+.picker-cat strong { font-size: clamp(12px, 1.15vw, 16px); overflow-wrap: anywhere; }
+.picker-assignment:not([hidden]) {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border: 1px solid #95c9e9;
+  border-radius: 50%;
+  background: #f7fdff;
+  color: #173e64;
+  font-size: clamp(12px, 1.2vw, 17px);
+  font-weight: 900;
+  line-height: 1;
+}
+.picker-card-stats {
+  display: flex;
+  justify-content: center;
+  gap: clamp(3px, .5vw, 7px);
+  width: calc(100% + 6px);
+  padding: 3px 0 4px;
+  background: #296194;
+  color: #fff;
+  font-size: clamp(11px, 1vw, 14px);
+  font-weight: 800;
+}
+.picker-card-stats span { display: flex; align-items: center; gap: 2px; }
+.picker-card-stats img { width: .9em; height: .9em; filter: brightness(0) invert(1); }
+
+.picker-stage {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: clamp(14px, 4vh, 37px) clamp(13px, 4vw, 52px) 24px;
+  background: linear-gradient(#26357ade, #176fafd9 57%, #b8f1fff2),
+    #287db4 url("assets/summer-pool-water-v2.png") center / cover;
+}
+.picker-picture { width: min(100%, clamp(300px, 75dvh, 560px)); }
+.picker-picture canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.picker-details { width: min(100%, 415px); display: grid; justify-items: center; gap: 6px; }
+.picker-details h3 {
+  grid-row: 2;
+  margin: 0;
+  padding: 3px 19px;
+  border-radius: 999px;
+  background: #164572;
+  color: #fff;
+  font-size: clamp(16px, 1.8vw, 24px);
+  line-height: 1.25;
+}
+.picker-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; }
+.picker-stats div { display: flex; gap: 7px; padding: 3px 9px; border-radius: 999px; background: #eaf7fc; font-size: 14px; }
+.picker-stats dd { margin: 0; font-weight: 850; }
+.picker-skill { width: 100%; margin-top: 4px; padding-bottom: 4px; color: #fff; }
+.picker-skill-title {
+  display: block;
+  margin-bottom: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #d4f3ff;
+  color: #1a4e76;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+.picker-skill-copy { padding: 4px 10px; border-radius: 8px; background: #e3f5ffee; color: #173b5c; }
+.picker-skill p { margin: 2px 0 0; }
+.picker-skill p { font-size: 14px; }
+.picker-confirmation { display: grid; justify-items: stretch; gap: 5px; width: min(100%, 215px); }
+.picker-confirmation p { margin: 0; padding: 3px 12px; border-radius: 5px; background: #9a4251; color: #fff; font-size: 14px; font-weight: 700; text-align: center; }
+.picker-confirmation:has(button:enabled) p { background: #206764; }
+.picker-confirmation button { background: #ffe08a; border-color: #c78b32; color: #4b300b; }
+.picker-confirmation button:disabled { background: #e3f1f9; border-color: #b6d3e3; color: #46677e; cursor: default; }
+
+@media (min-width: 621px) and (max-height: 620px) {
+  .picker-stage { gap: 5px; padding-block: 14px; }
+  .picker-picture { width: min(100%, clamp(255px, 66dvh, 400px)); }
+}
+
+@media (max-width: 620px) {
+  .picker-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .picker-back { font-size: 12px; padding: 4px 10px; }
+  .picker-library { padding-block: 10px 8px; }
+  .picker-library h2 { justify-content: start; margin-right: 92px; }
+  .picker-library h2::before { display: none; }
+  .picker-cats { max-height: 180px; }
+  .picker-cat canvas { width: min(100%, 62px); }
+  .picker-stage { gap: 5px; padding: 6px 12px 16px; }
+  .picker-picture { width: min(100%, 300px); }
+}

@@ -16,16 +16,35 @@
     }
   </script>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="skin.css">
-  <link rel="stylesheet" href="layout.css?v=side-hud-4">
+  <link rel="stylesheet" href="skin.css?v=entry-finish-1">
+  <link rel="stylesheet" href="layout.css?v=contact-1">
+  <link rel="stylesheet" href="versus.css?v=4">
+  <link rel="stylesheet" href="result.css?v=round-score-1">
   <script defer src="vendor/matter-0.20.0.min.js"></script>
   <script defer src="maps.js?v=formation-1"></script>
-  <script defer src="physics.js"></script>
-  <script defer src="battle.js"></script>
-  <script defer src="art.js?v=water-2"></script>
+  <script defer src="physics.js?v=contact-chain-1"></script>
+  <script defer src="motion.js?v=juzi-opening-2"></script>
+  <script defer src="landing-water.js?v=entry-water-1"></script>
+  <script defer src="landing-water-renderer.js?v=entry-water-1"></script>
+  <script defer src="contact-feedback.js?v=contact-chain-1"></script>
+  <script defer src="water-wake.js?v=water-wake-1"></script>
+  <script defer src="water-wake-renderer.js?v=water-surface-1"></script>
+  <script defer src="water-surface.js?v=water-loop-1"></script>
+  <script defer src="water-surface-renderer.js?v=water-loop-1"></script>
+  <script defer src="knockout-action.js?v=impact-live-1"></script>
+  <script defer src="knockout-renderer.js?v=impact-live-1"></script>
+  <script defer src="unseat-action.js?v=unseat-live-1"></script>
+  <script defer src="unseat-momentum.js?v=aligned-flight-1"></script>
+  <script defer src="unseat-renderer.js?v=contact-2"></script>
+  <script defer src="impact-contact.js?v=impact-read-1"></script>
+  <script defer src="impact-contact-renderer.js?v=impact-read-1"></script>
+  <script defer src="impact-beat.js?v=unseat-pace-1"></script>
+  <script defer src="knockout-camera.js?v=impact-read-1"></script>
+  <script defer src="battle.js?v=early-round-1"></script>
+  <script defer src="art.js?v=trio-default-1"></script>
   <script defer src="sound.js"></script>
   <script defer src="i18n.js"></script>
-  <script defer src="game.js?v=water-2"></script>
+  <script defer src="game.js?v=player-traits-1"></script>
 </head>
 <body>
   <main class="app">
@@ -52,7 +71,20 @@
           </section>
           <span id="score-status" class="sr-only"></span><span id="team-status" class="sr-only"></span>
         </div>
-        <div class="stage-slot"><div class="canvas-wrap"><canvas id="pool" width="960" height="600" tabindex="0" data-aria="ui.canvas"></canvas><div class="pause-cover" id="pause-cover" hidden><span data-t="ui.paused"></span></div></div></div>
+        <div class="stage-slot">
+          <div class="canvas-wrap">
+            <canvas id="pool" width="960" height="600" tabindex="0" data-aria="ui.canvas"></canvas>
+            <div id="round-score" class="round-score" hidden>
+              <div class="round-score-title"><span id="round-score-number"></span><span data-t="battle.totalKnockouts"></span></div>
+              <div class="round-score-line">
+                <span class="round-score-team"><span data-t="hud.ally"></span><strong id="round-score-ally"></strong></span>
+                <span aria-hidden="true">:</span>
+                <span class="round-score-team"><strong id="round-score-rival"></strong><span data-t="hud.enemy"></span></span>
+              </div>
+            </div>
+            <div class="pause-cover" id="pause-cover" hidden><span data-t="ui.paused"></span></div>
+          </div>
+        </div>
         <div class="pool-footer"><p id="play-hint" data-t="ui.hint"></p><p id="map-note" role="status" data-t="map.fallback" hidden></p></div>
       </section>
       <section class="controls" data-aria="ui.tuning">
@@ -69,7 +101,7 @@
               <span id="selected-stats" class="sr-only" aria-hidden="true"></span><span id="selected-turn" class="sr-only"></span>
             </div>
           </section>
-          <p class="launch-tip"><img class="tip-hand" src="assets/ui/icons/fa-regular/hand-pointer.svg" alt=""><span data-t="ui.launchHint"></span></p>
+          <p class="launch-tip"><img class="tip-hand" src="assets/ui/icons/fa-regular/hand-pointer.svg" alt=""><span id="launch-hint-copy" data-t="ui.launchHint" role="status"></span></p>
         </div>
         <div class="control-actions"><button id="sound-toggle" class="secondary" type="button" aria-pressed="true"><img id="sound-icon" src="assets/ui/icons/fa-solid/volume-high.svg" alt=""><span id="sound-label"></span></button><button id="show-tuning" type="button" class="secondary" data-aria="skin.settings"><img src="assets/ui/icons/fa-solid/gear.svg" alt=""><span data-t="skin.settings"></span></button><button id="reset" class="primary"><img src="assets/ui/icons/fa-solid/rotate-right.svg" alt=""><span id="reset-label" data-t="skin.restart"></span></button></div>
       </section>
@@ -79,10 +111,8 @@
           <div id="character-card">
             <canvas id="character-preview" width="192" height="192" data-aria="ui.artStudy"></canvas>
             <p id="character-stats"></p><p id="skill-description" class="muted"></p>
-            <div class="pose-buttons" role="group" data-aria="ui.expression"><button type="button" data-pose="0" aria-pressed="true" data-t="pose.idle"></button><button type="button" data-pose="1" aria-pressed="false" data-t="pose.impact"></button><button type="button" data-pose="2" aria-pressed="false" data-t="pose.rebound"></button></div>
-            <p class="muted" id="art-note" data-t="ui.artNote"></p>
+            <!-- dev-character -->
           </div>
-      <p class="muted" data-t="ui.placeholder"></p>
     </dialog>
     <dialog id="tuning-dialog" aria-labelledby="tuning-title">
       <header class="dialog-heading"><h2 id="tuning-title" data-t="skin.settings"></h2><button type="button" data-close="tuning-dialog" data-t="ui.close"></button></header>
@@ -90,20 +120,43 @@
         <section class="setup"><label for="game-mode" data-t="ui.mode"></label><select id="game-mode"><option value="battle" data-t="mode.battle"></option><option value="practice" data-t="mode.practice"></option></select></section>
         <section class="setup" id="layout-wrap"><label for="layout" data-t="ui.layout"></label><select id="layout" aria-describedby="layout-note"><option value="free" data-t="layout.free"></option><option value="wall" data-t="layout.wall"></option><option value="duel" data-t="layout.duel"></option><option value="chain" data-t="layout.chain"></option><option value="corner" data-t="layout.corner"></option></select><p id="layout-note" hidden></p></section>
         </div>
-        <section id="tuning"><p class="muted" id="tuning-note" data-t="ui.tuningHint"></p><fieldset id="tuning-fields">
-          <label><span data-t="param.drag"></span><output id="drag-value"></output><input type="range" id="drag" min="0.35" max="1.6" step="0.05"></label>
-          <label><span data-t="param.bounce"></span><output id="bounce-value"></output><input type="range" id="bounce" min="0.55" max="0.99" step="0.01"></label>
-          <label><span data-t="param.wallBounce"></span><output id="wallBounce-value"></output><input type="range" id="wallBounce" min="0.55" max="0.99" step="0.01"></label>
-          <label><span data-t="param.maxSpeed"></span><output id="maxSpeed-value"></output><input type="range" id="maxSpeed" min="800" max="2200" step="50"></label>
-          <label><span data-t="param.mass"></span><output id="mass-value"></output><input type="range" id="mass" min="0.5" max="3.5" step="0.25"></label>
-          <button id="defaults" type="button" class="secondary" data-t="ui.defaults"></button>
-        </fieldset><label class="boundary-control"><input id="show-hitboxes" type="checkbox"><span data-t="ui.boundaries"></span></label></section>
+        <!-- dev-settings -->
     </dialog>
-    <dialog id="result-dialog" aria-labelledby="result-title">
-      <h2 id="result-title"></h2><p id="result-note" class="muted"></p>
-      <button type="button" id="play-again" class="primary" data-t="battle.restart"></button>
-      <button type="button" class="secondary" data-close="result-dialog" data-t="ui.close"></button>
+    <dialog id="restart-dialog" aria-labelledby="restart-title" aria-describedby="restart-note">
+      <h2 id="restart-title" data-t="restart.title"></h2>
+      <p id="restart-note" data-t="restart.note"></p>
+      <button type="button" class="secondary" data-close="restart-dialog" data-t="restart.cancel" autofocus></button>
+      <button type="button" id="confirm-restart" class="primary" data-t="skin.restart"></button>
+    </dialog>
+    <dialog id="result-dialog" aria-labelledby="result-title" aria-describedby="result-note">
+      <div class="result-score-reveal" aria-hidden="true">
+        <span class="result-score-ally"><strong id="result-reveal-ally"></strong></span>
+        <span class="result-score-divider">:</span>
+        <span class="result-score-rival"><strong id="result-reveal-rival"></strong></span>
+      </div>
+      <section class="result-stage">
+        <div class="result-content">
+          <header>
+            <h2 id="result-title"></h2>
+            <p id="result-note" class="result-score-line"></p>
+            <p id="result-meta"></p>
+          </header>
+          <ul id="result-lineup" class="result-lineup" data-aria="result.lineup"></ul>
+          <div class="result-actions">
+            <button type="button" id="result-back" class="secondary" data-t="result.back"></button>
+            <button type="button" id="play-again" class="primary" data-t="battle.restart"></button>
+          </div>
+        </div>
+      </section>
     </dialog>
   </main>
+  <canvas id="knockout-layer" aria-hidden="true"></canvas>
+  <div id="versus-cue" class="versus-cue" aria-hidden="true" hidden>
+    <div class="versus-ribbons">
+      <div class="versus-ribbon versus-ribbon-ally"><strong id="versus-ally-name"></strong><span id="versus-ally-cats"></span></div>
+      <div class="versus-ribbon versus-ribbon-rival"><span id="versus-rival-cats"></span><strong id="versus-rival-name"></strong></div>
+      <span class="versus-burst"><b>VS</b></span>
+    </div>
+  </div>
 </body>
 </html>

@@ -2,6 +2,7 @@
   "image": "milkcap-expressions.png",
   "artSet": "concept-v2",
   "integratedFloat": true,
+  "opening": "../opening-v1/milkcap.json",
   "frames": [
     {
       "name": "idle",
@@ -54,5 +55,7 @@
       "y": 574
     },
     "diameterInWorld": 80
-  }
+  },
+  "knockoutV2": "../unseat-v2/milkcap-split.json",
+  "unseatV2": "../unseat-v2/milkcap.json"
 }

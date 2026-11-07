@@ -1,0 +1,63 @@
+{
+  "character": "milkcap",
+  "parts": [
+    {
+      "id": "float",
+      "image": "milkcap-atlas.png",
+      "source": {
+        "x": 21,
+        "y": 1189,
+        "width": 476,
+        "height": 289
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 58
+      },
+      "drawBox": {
+        "x": -40,
+        "y": -22,
+        "width": 80.0,
+        "height": 48.57142857142858
+      },
+      "flight": {
+        "delay": 0.055,
+        "departure": 0.94,
+        "drift": 0.22,
+        "turn": -1.7,
+        "growth": 0.24,
+        "squeezeX": 0.36,
+        "squeezeY": 0.16
+      }
+    },
+    {
+      "id": "character",
+      "image": "milkcap-atlas.png",
+      "source": {
+        "x": 15,
+        "y": 20,
+        "width": 468,
+        "height": 543
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 111
+      },
+      "drawBox": {
+        "x": -49.14,
+        "y": -90.44,
+        "width": 98.28,
+        "height": 114.03
+      },
+      "flight": {
+        "delay": 0,
+        "departure": 0.78,
+        "drift": 0.29,
+        "turn": 0.85,
+        "growth": 0.5,
+        "squeezeX": 0.12,
+        "squeezeY": 0.24
+      }
+    }
+  ]
+}

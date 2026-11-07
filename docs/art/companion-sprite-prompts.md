@@ -15,7 +15,7 @@
 
 - 布丁初稿：`exec-4d126d03-8363-4f9b-9bfa-585b874f4232.png`；采用间距修正版 `exec-17a8aee9-0e3f-49e3-a33d-3ddda37b6b38.png`。
 - 奶盖初稿：`exec-7aeee3a3-60e1-48ff-8913-d5abc4e986d5.png`；采用间距修正版 `exec-8d2e7285-ac5f-4908-909f-cf63bf8b1739.png`。
-- 工具原始输出保留在 `C:/Users/cai/.codex/generated_images/01a153e2-1374-7980-9636-3fd499abe0be/`；实际游戏资源已复制到本仓库 `static/assets/`，运行不依赖原输出目录。
+- 游戏使用仓库 `static/assets/` 中的图像资源。
 
 ## 布丁完整提示
 

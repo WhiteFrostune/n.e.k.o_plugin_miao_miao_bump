@@ -1,0 +1,21 @@
+{
+  "character": "juzi",
+  "parts": [
+    {
+      "id": "float",
+      "image": "juzi-ring-v1.png",
+      "source": { "x": 68, "y": 115, "width": 1466, "height": 783 },
+      "pixelGrid": { "width": 96, "height": 51 },
+      "drawBox": { "x": -40.67, "y": -22, "width": 81.34, "height": 43.44 },
+      "flight": { "delay": 0.055, "departure": 0.94, "drift": 0.22, "turn": -1.7, "growth": 0.24, "squeezeX": 0.36, "squeezeY": 0.16 }
+    },
+    {
+      "id": "character",
+      "image": "juzi-airborne-v3.png",
+      "source": { "x": 97, "y": 55, "width": 1089, "height": 1165 },
+      "pixelGrid": { "width": 100, "height": 107 },
+      "drawBox": { "x": -50, "y": -85, "width": 100, "height": 107 },
+      "flight": { "delay": 0, "departure": 0.78, "drift": 0.29, "turn": 0.85, "growth": 0.5, "squeezeX": 0.12, "squeezeY": 0.24 }
+    }
+  ]
+}

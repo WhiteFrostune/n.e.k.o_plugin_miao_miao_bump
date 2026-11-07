@@ -109,8 +109,10 @@
       this.quietTime = 0;
       this.maxSpeed = 0;
       this.impacts = [];
+      this.visualContacts = [];
       this.fault = false;
       this._lastImpacts = new Map();
+      this._lastVisualContacts = new Map();
       this._velocities = new Map();
       this._contacts = new Map();
       this._pendingRemoval = new Set();
@@ -189,6 +191,9 @@
       for (const key of this._lastImpacts.keys()) {
         if (key.split(':').some(id => bodies.has(Number(id)))) this._lastImpacts.delete(key);
       }
+      for (const key of this._lastVisualContacts.keys()) {
+        if (key.split(':').some(id => bodies.has(Number(id)))) this._lastVisualContacts.delete(key);
+      }
       removed.clear();
     }
 
@@ -206,7 +211,9 @@
       this.accumulator = 0;
       this.fault = false;
       this.impacts = [];
+      this.visualContacts = [];
       this._lastImpacts.clear();
+      this._lastVisualContacts.clear();
       return true;
     }
 
@@ -235,6 +242,21 @@
         const ringIds = [pair.bodyA, pair.bodyB].filter(body => !body.isStatic).map(body => body.plugin.ringId);
         const impact = { x: support.x, y: support.y, speed: impactSpeed, wall,
           ringId: dynamic.plugin.ringId, ringIds, normal: { x: normal.x, y: normal.y } };
+        // Capture pre-solver motion before a lethal callback removes the body.
+        // This is presentation data; it does not apply another physical impulse.
+        impact.kinematics = [pair.bodyA,pair.bodyB].filter(body=>!body.isStatic).map(body=>{
+          const v=this._velocities.get(body.id)||{x:0,y:0};
+          return {id:body.plugin.ringId,vx:v.x,vy:v.y,mass:body.mass};
+        });
+        // A separate, read-only stream includes gentle contacts without changing
+        // the existing impact counter, damage gates or restitution.
+        if (!wall || this.elapsed - (this._lastVisualContacts.get(key) ?? -1) >= 0.075) {
+          this._lastVisualContacts.set(key, this.elapsed);
+          this.visualContacts.push({ ...impact, simulationTime: this.elapsed,
+            centers: [pair.bodyA, pair.bodyB].filter(body => !body.isStatic)
+              .map(body => ({ id: body.plugin.ringId, x: body.position.x, y: body.position.y })) });
+          if (this.visualContacts.length > 256) this.visualContacts.shift();
+        }
         // Every new ring contact reaches combat, regardless of speed or which body moved.
         // Splash/sound intensity and the practice impact counter have separate filtering.
         if (!wall && this.onContact) this.onContact(impact);
@@ -308,6 +330,10 @@
       return this.impacts.splice(0);
     }
 
+    drainVisualContacts() {
+      return this.visualContacts.splice(0);
+    }
+
     destroy() {
       this.onContact = null;
       Events.off(this.engine, 'collisionStart', this._collisionHandler);
@@ -315,6 +341,13 @@
       Composite.clear(this.engine.world, false);
       Engine.clear(this.engine);
       this.rings = [];
+      this.impacts = [];
+      this.visualContacts = [];
+      this._lastVisualContacts.clear();
+      this._contacts.clear();
+      this._velocities.clear();
+      this._lastImpacts.clear();
+      this._pendingRemoval.clear();
       this.moving = false;
     }
   }

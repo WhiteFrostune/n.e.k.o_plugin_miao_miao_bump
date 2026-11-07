@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+  <meta charset="utf-8"><base href="/static/">
+  <meta name="darkreader-lock"><meta name="color-scheme" content="only light">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>橘子 · 受击失衡动作小样</title><link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/tests/previews/juzi-motion-v2/style.css">
+  <style>.reference{color:#367b83}.toolbar .check{white-space:nowrap}.beats a{padding:8px 10px}.quiet{max-width:1100px}</style>
+  <script defer src="motion.js?v=motion-choice-1"></script>
+  <script defer src="art.js?v=impact-live-1"></script>
+  <script defer src="knockout-action.js?v=impact-live-1"></script>
+  <script defer src="knockout-renderer.js?v=impact-live-1"></script>
+  <script defer src="/tests/previews/juzi-unseat-v1/track-previous.js?v=1"></script>
+  <script defer src="/tests/previews/juzi-unseat-v1/track.js?v=shared-contact-2"></script>
+  <script defer src="/tests/previews/juzi-unseat-v1/camera.js?v=1"></script>
+  <script defer src="/tests/previews/juzi-unseat-v1/preview.js?v=camera-1"></script>
+</head><body><main>
+  <header><div><p class="eyebrow">喵喵碰碰大作战 · 参考动作再适配</p><h1>橘子 · 被撞失衡的小样</h1></div><span class="badge">独立小样 · 正式对局未替换</span></header>
+  <section class="toolbar" aria-label="预览设置">
+    <label>版本<select id="version"><option value="new">本次修改 · 共同受击后脱圈</option><option value="previous">上次小样 · 过早分叉</option><option value="old">当前实机版</option><option value="both">修改前后同步对比</option></select></label>
+    <label>速度<select id="speed"><option value="1">正常速度</option><option value="0.5">半速</option><option value="0.25">四分之一速度</option></select></label>
+    <label>镜头<select id="camera"><option value="cinematic">推近后拉回</option><option value="fixed">固定镜头</option><option value="compare">固定 / 移动同步对照</option></select></label>
+    <label>受击方向<select id="direction"><option value="left">向左</option><option value="right">向右</option><option value="up">向上</option><option value="down">向下</option></select></label>
+    <label>位置<select id="origin"><option value="center">泳池中央</option><option value="top">靠近上沿</option><option value="bottom">靠近下沿</option></select></label>
+    <label class="check"><input id="show-attacker" type="checkbox" checked>显示来撞的猫</label>
+    <label class="check"><input id="loop" type="checkbox" checked>循环</label>
+  </section>
+  <section class="stage" aria-label="受击失衡动画"><canvas id="study-canvas" aria-label="橘子被撞离泳圈的动作示意"></canvas><p id="loading">正在载入橘子…</p><div id="stage-label" class="stage-label"></div><div id="phase-tag" class="phase-tag"></div></section>
+  <section class="playback" aria-label="播放控制"><div class="buttons"><button id="replay">重播</button><button id="play">暂停</button><button id="previous">上一帧</button><button id="next">下一帧</button></div><label class="scrubber">逐帧查看<input type="range" id="timeline" min="-0.3" max="1.45" step="0.0166666667" value="-0.3"></label><output id="time">准备</output></section>
+  <nav class="beats" aria-label="关键动作"><button data-time="0.12">① 一起受击</button><button data-time="0.24">② 翻出圈沿</button><button data-time="0.32">③ 逐渐脱开</button><button data-time="0.45">④ 脱离后翻飞</button><button data-time="0.85">⑤ 离场</button><a class="reference" href="https://www.youtube.com/watch?v=3XPxgiLKYT4&amp;t=63s" target="_blank" rel="noopener">崩铁参考片段 ↗</a></nav>
+  <footer><p>镜头对照使用完全相同的动作：左侧固定，右侧命中时推近、脱圈后拉回。场景与角色一起随镜头移动，界面固定。此次暂不加模糊、拖尾或震屏，先单独比较镜头的作用。</p><p class="quiet">独立动作示意，未运行对战规则。旧动作与全部素材保留；不修改正式对局或游戏偏好。角色暂用镜像与四姿态粗样。系统偏好减少动态时默认固定镜头，可手动切换预览。</p><details><summary>检查状态</summary><pre id="check-status"></pre></details></footer>
+</main></body></html>

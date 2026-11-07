@@ -1,0 +1,108 @@
+.choose-map:not(:disabled) { cursor: pointer; }
+.choose-map:not(:disabled):hover { background: #d7f1ff; border-color: #4d99cf; }
+
+.map-picker {
+  width: min(1020px, calc(100% - 30px));
+  max-height: calc(100dvh - 30px);
+  overflow: auto;
+  padding: 0;
+  border: 2px solid #f6bb57;
+  border-radius: 22px;
+  background: #fffaef;
+  color: #193c62;
+  box-shadow: 0 14px 46px #12314f55;
+}
+.map-picker::backdrop { background: #113e60ad; }
+.map-picker-header, .map-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px clamp(12px, 2vw, 24px);
+}
+.map-picker-header h2 { margin: 0; font-size: clamp(21px, 2.4vw, 30px); }
+.map-picker-header button, .map-picker-footer button {
+  padding: 7px 15px;
+  border: 1px solid #7cb4d8;
+  border-radius: 999px;
+  background: #eef9ff;
+  color: #225480;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.map-picker-body { display: grid; grid-template-columns: minmax(185px, 1fr) minmax(0, 3fr); border-block: 1px solid #ebd7b1; }
+.map-library { padding: 14px; background: #f0faff; }
+.map-library h3 { margin: 0 0 8px; font-size: 15px; }
+.map-choices { display: grid; gap: 8px; max-height: 51dvh; overflow: auto; list-style: none; margin: 0; padding: 3px 4px; }
+.map-choices li { min-width: 0; }
+.map-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 95px) minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 55px;
+  padding: 6px;
+  border: 1px solid #95bfd6;
+  border-radius: 10px;
+  background: #fff;
+  color: #23476d;
+  text-align: left;
+  font-size: 14px;
+}
+button.map-choice { cursor: pointer; }
+.map-choice[aria-pressed="true"] { border-color: #338dc2; background: #d7f1ff; box-shadow: inset 0 0 0 1px #338dc2; }
+.map-choice:focus-visible { outline-offset: 1px; }
+.map-choice canvas { display: block; width: 100%; aspect-ratio: 1.9; border-radius: 6px; }
+.map-choice canvas { object-fit: contain; image-rendering: pixelated; background: #e9f5fb; }
+
+.map-details { min-width: 0; padding: 13px clamp(12px, 2vw, 23px); background: #fffdf5; }
+.map-preview-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px 12px; margin-bottom: 10px; }
+.map-preview-heading h3 { margin: 0; font-size: clamp(18px, 2vw, 24px); }
+.map-preview-heading p, .map-preview-tip { margin: 3px 0 0; color: #405e74; font-size: 13px; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 5px 12px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.map-legend li { display: flex; align-items: center; gap: 4px; }
+.map-legend i { width: 10px; height: 10px; border-radius: 50%; }
+.map-team-ally { background: #195b9d; }
+.map-team-rival { background: #aa3b61; }
+.map-geometry {
+  position: relative;
+  width: min(100%, calc(48dvh * var(--map-aspect, 1.9)));
+  aspect-ratio: var(--map-aspect, 1.9);
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #d5edf7;
+}
+.map-geometry canvas:not([hidden]) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.map-markers { position: absolute; inset: 0; }
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: clamp(19px, 2.6vw, 32px);
+  aspect-ratio: 1;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  font-size: clamp(11px, 1.4vw, 16px);
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 4px #16385860;
+}
+.map-preview-tip { margin-top: 8px; text-align: center; }
+.map-picker-footer { justify-content: end; }
+.map-picker-footer button { min-width: 135px; border-color: #bd872f; background: #ffe08a; color: #4b300b; }
+
+@media (max-width: 680px) {
+  .map-picker { width: calc(100% - 20px); max-height: calc(100dvh - 20px); border-radius: 15px; }
+  .map-picker-body { grid-template-columns: minmax(0, 1fr); }
+  .map-library { padding: 7px 10px; }
+  .map-library h3 { margin-bottom: 3px; }
+  .map-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; max-height: 26dvh; }
+  .map-choice { grid-template-columns: minmax(0, 1fr); gap: 3px; padding: 4px; text-align: center; font-size: 12px; }
+  .map-details { padding: 8px 10px; }
+  .map-preview-heading { margin-bottom: 7px; }
+}

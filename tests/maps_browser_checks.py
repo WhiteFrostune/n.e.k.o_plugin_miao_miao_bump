@@ -6,7 +6,15 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import assert_viewport_fit, launch, ring_point, select_setting, snapshot
+from browser_checks import (
+    assert_viewport_fit,
+    enable_dev_controls,
+    launch,
+    restart_pool,
+    ring_point,
+    select_setting,
+    snapshot,
+)
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +30,7 @@ def run(url):
         browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(viewport={"width": 1366, "height": 768})
+            enable_dev_controls(context)
             context.add_init_script("""(() => {
                 const original = window.requestAnimationFrame.bind(window);
                 let time = 0;
@@ -64,11 +73,11 @@ def run(url):
             assert not snapshot(page)["fault"]
             checks.append("square geometry drives actual art, spawn positions, visible-head input and CPU turn")
 
-            page.click("#reset")
+            restart_pool(page)
             select_setting(page, "#game-mode", "practice")
             assert snapshot(page)["map"]["id"] == "test-square"
             select_setting(page, "#layout", "wall")
-            page.click("#reset")
+            restart_pool(page)
             assert [(cat["x"], cat["y"]) for cat in snapshot(page)["rings"]] == [(400, 400)]
             launch(page, 0, 160, 0)
             page.wait_for_function("!miaoPlayground.snapshot().moving")
@@ -117,12 +126,13 @@ def run(url):
                 assert_viewport_fit(fallback)
                 fallback.screenshot(path=str(artifacts / f"map-square-fallback-{failure}.png"))
                 launch(fallback, 1, 80, 0)
-                fallback.click("#reset")
+                restart_pool(fallback)
                 assert snapshot(fallback)["battle"]["map"]["world"] == FIXTURE["world"]
                 fallback.close()
             checks.append("missing or malformed map art falls back visually without replacing square physics or cats")
 
             mobile_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
+            enable_dev_controls(mobile_context)
             mobile_context.route("**/maps.js", lambda route: route.fulfill(
                 body=source + "\nwindow.MiaoMaps.register(" + json.dumps(FIXTURE) + ");",
                 content_type="text/javascript",

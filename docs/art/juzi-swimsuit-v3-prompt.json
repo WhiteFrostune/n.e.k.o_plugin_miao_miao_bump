@@ -1,0 +1,11 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-10-22",
+  "path": "static/assets/characters/knockout-v1/juzi-airborne-v3.png",
+  "references": [
+    "static/assets/characters/knockout-v1/juzi-airborne-v2.png",
+    "static/assets/characters/concept-v2/juzi-expressions.png"
+  ],
+  "reason": "延续原图水手领、肩部荷叶边与花扣作为泳装装饰，连体泳装、赤脚；v1/v2 备份保留。",
+  "prompt": "Use case: precise-object-edit, costume continuity repair. Image 1 is the edit target: Juzi's complete airborne transparent pixel sprite, already wearing an orange/cream ONE-PIECE SWIMSUIT with BARE FEET. Image 2 is the established in-game Juzi three-expression sheet, identity and swimsuit upper-body design reference; use its middle impact expression. Make ONLY a local correction to the upper swimsuit neckline and shoulder decoration on image 1 so that the character has NOT CHANGED COSTUME when leaving the ring: restore the same small cream sailor-style decorative collar, small orange flower chest clasp, cream/orange short frilled shoulder trim visible in image 2. These are trim on a swimsuit, NOT a sailor school uniform, jacket, shorts or romper. Retain the continuous opaque one-piece orange/cream swimsuit down to the hips, brief subtle hip frill, short bare chibi legs and BARE FEET from image 1. No trousers, no separate shorts, no socks, no footwear. Keep EXACTLY image 1's face, huge head proportions, hair silhouette, white flower/green leaves, tiny orange kitten on the head, surprised >< eyes and O mouth, arms-up airborne tucked-leg pose, attached striped tail, camera, canvas framing and transparent margins. Keep dark stepped pixel outlines, crisp block clusters and orange/cream colors. Do not redraw the whole character or add swimming ring, water, effects, text, checkerboard or background. One complete isolated character, genuine transparent alpha. Goal is the established floating character's same upper costume continued as a practical modest cute one-piece swimsuit, nonsexualized."
+}

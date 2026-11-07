@@ -1,0 +1,16 @@
+{
+  "tool": "built-in image_gen",
+  "note": "Both v1 and v2 atlases were rejected by the user: v1 is one-piece; v2 has insufficiently separated swim top and bottom. Neither version is registered in live character metadata. Pending redesign with clearly separate two-piece swimwear.",
+  "assets": [
+    {
+      "key": "pudding",
+      "path": "static/assets/characters/unseat-v1/pudding-atlas-v2.png",
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game animation atlas. Edit target image 1 is the Pudding atlas. Change ONLY the swimsuit in each of the FOUR catgirl poses from a one-piece to a modest sporty TWO-PIECE SWIMSUIT. Preserve the cream/yellow/chocolate sailor-style top with short ruffled sleeves and flower pendant, but make it a SHORT SEPARATE SWIM TOP, ending above her waist. The separate matching yellow-and-cream swim bottom has a small ruffled swim skirt edge, no shorts or trousers. A small natural band of midriff clearly separates the top and bottom. This is neutral cute chibi game clothing; no change to proportions or pose. Keep original face, enormous head, cream/chocolate hair, pudding hairclip, yellow bows, brown ears, attached Siamese head kitten, tail, arms, bare feet and every pose EXACTLY in place. Keep the full atlas layout and bounds identical, do not rescale shift or crop any sprite. Preserve the fifth standalone ring EXACTLY unchanged. Keep genuine transparent alpha outside sprites and inside ring hole. No background, halo, fog or shadow. Crisp chunky pixel-art outlines and limited palette remain unchanged. No text."
+    },
+    {
+      "key": "milkcap",
+      "path": "static/assets/characters/unseat-v1/milkcap-atlas-v2.png",
+      "prompt": "Use case: precise-object-edit. Asset type: transparent game animation atlas. Edit target image 1 is the Milkcap atlas. Change ONLY the swimsuit in each of the FOUR catgirl poses from a one-piece to a modest sporty TWO-PIECE SWIMSUIT. Preserve the white/lavender sailor-style top with short ruffled sleeves and small lavender flower clasp, but make it a SHORT SEPARATE SWIM TOP, ending above her waist. The separate matching lavender-and-white swim bottom has a small ruffled swim skirt edge, no shorts or trousers. A small natural band of midriff clearly separates the top and bottom. This is neutral cute chibi game clothing; no change to proportions or pose. Keep original face, enormous head, long creamy-white braided hair, white four-petal flower hairclip, lilac bows, gray ears, attached gray-and-white head kitten, tail, arms, bare feet and every pose EXACTLY in place. Keep the full atlas layout and bounds identical, do not rescale shift or crop any sprite. Preserve the fifth standalone ring EXACTLY unchanged. Keep genuine transparent alpha outside sprites and inside ring hole. No background, halo, fog or shadow. Crisp chunky pixel-art outlines and limited palette remain unchanged. No text."
+    }
+  ]
+}

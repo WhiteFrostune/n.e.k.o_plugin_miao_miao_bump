@@ -1,25 +1,11 @@
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.MiaoArt = factory();
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./motion.js'),require('./unseat-renderer.js'),require('./water-surface-renderer.js'));
+  else root.MiaoArt = factory(root.MiaoMotion,root.MiaoUnseatRenderer,root.MiaoWaterSurfaceRenderer);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (M,U,Water) {
   'use strict';
 
   function flightAt(event, age, map, reducedMotion = false) {
-    const t = Math.max(0, Math.min(1, age / event.duration));
-    const d = event.direction;
-    const { bounds: b, width, height } = map.world;
-    const distances = [];
-    if (d.x > 1e-8) distances.push((b.right + 70 - event.x) / d.x);
-    if (d.x < -1e-8) distances.push((b.left - 70 - event.x) / d.x);
-    if (d.y > 1e-8) distances.push((b.bottom + 70 - event.y) / d.y);
-    if (d.y < -1e-8) distances.push((b.top - 70 - event.y) / d.y);
-    const distance = reducedMotion ? 28 : Math.max(28, Math.min(...distances));
-    const progress = t * t;
-    const lift = reducedMotion ? 0 : Math.sin(Math.PI * t) * Math.min(width, height) * 0.17;
-    return { x: event.x + d.x * distance * progress, y: event.y + d.y * distance * progress - lift,
-      shadowX: event.x + d.x * distance * progress, shadowY: event.y + d.y * distance * progress,
-      rotation: reducedMotion ? 0 : (d.x < 0 ? -1 : 1) * t * 0.7,
-      scale: 1 - t * (reducedMotion ? 0.05 : 0.4), alpha: Math.min(1, (1 - t) / 0.3) };
+    return M.sampleFlight(M.createFlight(event, { reducedMotion }), age, map);
   }
 
   function reactionAt(age, strength = 1, reducedMotion = false) {
@@ -58,10 +44,10 @@
     return image;
   }
 
-  async function load(character = 'juzi', artSet = 'concept-v2') {
+  async function load(character = 'juzi', artSet = 'concept-v2', knockoutSet = 'classic') {
     const selected = artSet === 'classic' ? 'classic' : 'concept-v2';
     try {
-      return await loadCharacter(character, selected);
+      return await loadCharacter(character, selected, knockoutSet);
     } catch (error) {
       if (selected === 'classic') throw error;
       const fallback = await loadCharacter(character, 'classic');
@@ -70,7 +56,7 @@
     }
   }
 
-  async function loadCharacter(character, artSet) {
+  async function loadCharacter(character, artSet, knockoutSet = 'classic') {
     const directory = artSet === 'classic' ? 'assets' : 'assets/characters/concept-v2';
     const metadataUrl = new URL(`${directory}/${character}.json`, document.baseURI);
     const response = await fetch(metadataUrl, { cache: 'no-cache' });
@@ -95,9 +81,46 @@
       return sprite;
     });
     const hitPixels = frames[0].getContext('2d').getImageData(0, 0, frames[0].width, frames[0].height).data;
+    let knockout = null;
+    if (metadata.knockout) {
+      try { knockout = await loadKnockout(new URL(metadata.knockout, metadataUrl)); }
+      catch { /* Optional split art fails as a unit; preserve the existing character. */ }
+    }
+    let knockoutPoses = null;
+    if (knockout && metadata.knockoutPoses) {
+      try { knockoutPoses = await loadKnockoutPoses(new URL(metadata.knockoutPoses, metadataUrl)); }
+      catch { /* Missing optional poses preserve the old split knockout as a unit. */ }
+    }
 
+    let unseat=null;
+    if(knockout&&metadata.unseat&&U){
+      try{unseat=await U.load(new URL(metadata.unseat,metadataUrl));}
+      catch{ /* Optional study art must not break normal cats or old knockouts. */ }
+    }
+    const classicKnockout = { knockout, knockoutPoses, unseat };
+    metadata.knockoutSetUsed='classic';
+    if(knockoutSet==='swim-v2'&&metadata.knockoutV2&&metadata.unseatV2&&U){
+      try{
+        const [split,poses]=await Promise.all([
+          loadKnockout(new URL(metadata.knockoutV2,metadataUrl)),
+          U.load(new URL(metadata.unseatV2,metadataUrl))]);
+        // Replace the pair atomically: a new body must never borrow an old ring.
+        knockout=split;unseat=poses;knockoutPoses=null;
+        metadata.knockoutSetUsed='swim-v2';
+      }catch{ /* Keep old optional art and the normal character fully usable. */ }
+    }
+    let opening = null;
+    if (metadata.opening) {
+      try { opening = await loadOpening(new URL(metadata.opening, metadataUrl)); }
+      catch { /* Missing opening art skips the entrance without blocking play. */ }
+    }
     return {
       metadata,
+      knockout,
+      knockoutPoses,
+      unseat,
+      classicKnockout,
+      opening,
       drawPortrait(context) {
         const frame = frames[0];
         // Keep the head-top cat and face on the same sampled game-pixel grid.
@@ -130,6 +153,114 @@
     };
   }
 
+  async function loadOpening(metadataUrl) {
+    const response = await fetch(metadataUrl, { cache: 'no-cache' });
+    if (!response.ok) throw new Error('Opening pose metadata unavailable');
+    const metadata = await response.json();
+    const image = new Image();
+    image.src = new URL(metadata.image, metadataUrl).href;
+    await image.decode();
+    const frames = {};
+    for (const id of ['ring', 'jump', 'catch']) {
+      const { source, box, outline } = metadata.frames[id];
+      const [x, y, width, height] = source;
+      const sprite = document.createElement('canvas');
+      sprite.width = box[2]; sprite.height = box[3];
+      const target = sprite.getContext('2d');
+      target.imageSmoothingEnabled = false;
+      if (outline) {
+        target.beginPath();
+        outline.forEach(([px, py], i) => {
+          const sx = px * sprite.width / width, sy = py * sprite.height / height;
+          if (i === 0) target.moveTo(sx, sy); else target.lineTo(sx, sy);
+        });
+        target.closePath(); target.clip();
+      }
+      target.drawImage(image, x, y, width, height, 0, 0, sprite.width, sprite.height);
+      const pixels = target.getImageData(0, 0, sprite.width, sprite.height);
+      for (let i = 3; i < pixels.data.length; i += 4) pixels.data[i] = pixels.data[i] < 128 ? 0 : 255;
+      target.putImageData(pixels, 0, 0);
+      frames[id] = { sprite, box };
+    }
+    return { draw(context, id) {
+      const { sprite, box } = frames[id];
+      context.imageSmoothingEnabled = false;
+      context.drawImage(sprite, ...box);
+    } };
+  }
+
+  async function loadKnockoutPoses(metadataUrl) {
+    const response=await fetch(metadataUrl,{cache:'no-cache'});
+    if(!response.ok)throw new Error('Knockout poses unavailable');
+    const metadata=await response.json();
+    if(!Array.isArray(metadata.frames)||metadata.frames.length!==3
+      || !['impact','extend','tuck'].every(id=>metadata.frames.some(frame=>frame.id===id))
+      || ![metadata.headRestY,metadata.headWidthInWorld,metadata.pivotBelowHead].every(Number.isFinite)
+      || metadata.headWidthInWorld<=0)throw new Error('Invalid knockout pose registration');
+    const image=new Image();image.src=new URL(metadata.image,metadataUrl).href;await image.decode();
+    const sprites=new Map(metadata.frames.map(frame=>{
+      const s=frame.source,a=frame.headAnchor;
+      if(!s||!a||![s.x,s.y,s.width,s.height,a.x,a.y,frame.headWidth].every(Number.isFinite)
+        || s.x<0||s.y<0||s.width<=0||s.height<=0||frame.headWidth<=0||frame.headWidth>s.width
+        || s.x+s.width>image.naturalWidth||s.y+s.height>image.naturalHeight
+        || a.x<s.x||a.x>s.x+s.width||a.y<s.y||a.y>s.y+s.height)throw new Error('Invalid knockout pose crop');
+      const sprite=document.createElement('canvas');sprite.width=96;sprite.height=Math.round(96*s.height/s.width);
+      const target=sprite.getContext('2d');target.imageSmoothingEnabled=false;
+      target.drawImage(image,s.x,s.y,s.width,s.height,0,0,sprite.width,sprite.height);
+      const pixels=target.getImageData(0,0,sprite.width,sprite.height);
+      for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]<128?0:255;
+      target.putImageData(pixels,0,0);
+      const scale=metadata.headWidthInWorld/frame.headWidth;
+      return [frame.id,{sprite,box:{x:(s.x-a.x)*scale,y:(s.y-a.y)*scale,width:s.width*scale,height:s.height*scale}}];
+    }));
+    return {headRestY:metadata.headRestY,pivotBelowHead:metadata.pivotBelowHead,
+      draw(context,id){const {sprite,box}=sprites.get(id);context.save();context.imageSmoothingEnabled=false;
+        context.drawImage(sprite,box.x,box.y,box.width,box.height);context.restore();}};
+  }
+
+  async function loadKnockout(metadataUrl) {
+    const response = await fetch(metadataUrl, { cache: 'no-cache' });
+    if (!response.ok) throw new Error('Knockout metadata unavailable');
+    const metadata = await response.json();
+    if (!Array.isArray(metadata.parts) || metadata.parts.length !== 2
+      || !['float', 'character'].every(id => metadata.parts.some(part => part.id === id))) {
+      throw new Error('Incomplete split character');
+    }
+    const sprites = await Promise.all(metadata.parts.map(async part => {
+      const source = part.source, grid = part.pixelGrid, box = part.drawBox, flight = part.flight;
+      if (!source || !grid || !box || !flight
+        || ![source.x, source.y, source.width, source.height, box.x, box.y, box.width, box.height,
+            flight.delay, flight.departure, flight.drift, flight.turn, flight.growth,
+            flight.squeezeX, flight.squeezeY].every(Number.isFinite)
+        || source.x < 0 || source.y < 0 || source.width <= 0 || source.height <= 0 || box.width <= 0 || box.height <= 0
+        || ![grid.width, grid.height].every(n => Number.isInteger(n) && n > 0 && n <= 256)
+          || flight.delay < 0 || flight.delay > 0.2 || flight.departure <= flight.delay || flight.departure > 1
+          || flight.drift < 0 || flight.drift > 1 || Math.abs(flight.turn) > Math.PI
+          || flight.growth < 0 || flight.growth > 1
+          || flight.squeezeX < 0 || flight.squeezeX > 0.7
+          || flight.squeezeY < 0 || flight.squeezeY > 0.7) throw new Error('Invalid split art');
+      const image = new Image(); image.src = new URL(part.image, metadataUrl).href; await image.decode();
+      if (source.x + source.width > image.naturalWidth || source.y + source.height > image.naturalHeight) {
+        throw new Error('Split art crop outside image');
+      }
+      const sprite = document.createElement('canvas'); sprite.width = grid.width; sprite.height = grid.height;
+      const target = sprite.getContext('2d'); target.imageSmoothingEnabled = false;
+      target.drawImage(image, source.x, source.y, source.width, source.height, 0, 0, grid.width, grid.height);
+      const pixels = target.getImageData(0, 0, grid.width, grid.height);
+      for (let i = 3; i < pixels.data.length; i += 4) pixels.data[i] = pixels.data[i] < 128 ? 0 : 255;
+      target.putImageData(pixels, 0, 0);
+      return { id: part.id, sprite, box };
+    }));
+    return {
+      parts: metadata.parts,
+      draw(context, id) {
+        const { sprite, box } = sprites.find(part => part.id === id);
+        context.save(); context.imageSmoothingEnabled = false;
+        context.drawImage(sprite, box.x, box.y, box.width, box.height); context.restore();
+      },
+    };
+  }
+
   async function loadUiSurfaces() {
     const url = new URL('assets/ui/side-surfaces.json', document.baseURI);
     const response = await fetch(url, { cache: 'no-cache' });
@@ -151,7 +282,7 @@
     return Object.fromEntries(entries);
   }
 
-  async function loadPool(definition, { classicWater = false } = {}) {
+  async function loadPool(definition, { classicWater = false, dynamicWater = true } = {}) {
     if (!definition.art) throw new Error('Map uses procedural art');
     const { bounds, width, height } = definition.world;
     const metadataUrl = new URL(definition.art.metadata, document.baseURI);
@@ -217,17 +348,25 @@
         surface = null;
       }
     }
+    let animation = null;
+    if (surface && dynamicWater && metadata.waterSurface.motion?.enabled && Water) {
+      try { animation = Water.create(surface, bounds, metadata.waterSurface.motion); }
+      catch { /* Unsupported pixel access keeps the approved static water usable. */ }
+    }
     return {
       waterStyle: surface ? 'clear-v2' : 'classic',
-      draw(target) {
+      dynamicWater: Boolean(animation),
+      resetWater() { animation?.reset(); },
+      waterState() { return animation?.snapshot() || null; },
+      draw(target, { time = 0, sources = [], reducedMotion = false } = {}) {
         target.save();
         target.imageSmoothingEnabled = false;
         target.drawImage(map, 0, 0, width, height);
         if (surface) {
-          // Keep broad underwater light fixed. Translating the entire bitmap
-          // made the pool look like a sliding membrane; local ripples live in game.js.
+          // Warp locally in a cached surface; the rim and original image remain fixed.
           target.beginPath(); target.rect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top); target.clip();
-          target.drawImage(surface, bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
+          if (animation && !reducedMotion) animation.draw(target, time, sources);
+          else target.drawImage(surface, bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top);
         }
         target.restore();
       },

@@ -1,0 +1,18 @@
+{
+  "status": "Standing costume preview only; awaiting user approval. Not registered in the game.",
+  "tool": "built-in image_gen",
+  "image": "trio-standing.png",
+  "characters": [
+    "juzi",
+    "pudding",
+    "milkcap"
+  ],
+  "constraints": [
+    "Two-piece swimwear",
+    "No collars or sleeves",
+    "Bare feet",
+    "Head-top kitten stays attached",
+    "Different swimwear silhouettes"
+  ],
+  "prompt": "Use case: identity-preserve. Asset type: THREE-CHARACTER full-body costume concept lineup for an established cute chunky pixel-art game. Input image 1 is Juzi's exact identity reference (orange hair, orange tabby ears and tail, amber eyes, white flower with green leaves, tiny orange tabby kitten atop head). Input image 2 is Pudding and Milkcap's exact full-body identity/proportions reference. Preserve all three identities, hairstyles, faces, head kittens, distinctive ears, hair ornaments and tails. Primary request: create a FRESH matching lineup of THREE complete front-facing chibi characters, standing neutrally barefoot with arms gently away from waist, left to right JUZI, PUDDING, MILKCAP, equally spaced and at the same body/head scale. Both head-top kitten and all bare toes visible in every figure. Keep the same enormous round head/tiny body style, bold dark stepped pixel outlines, limited color clusters and visible crisp pixels; no smooth vector painting. Redesign all THREE swimsuits with NO COLLARS and NO SLEEVES, no sailor collars, no fabric on upper arms, no detached sleeves or wrist cuffs. Each outfit is unmistakably TWO SEPARATE pieces: a short independent swim top and independent swim briefs, with a broad clear bare midriff between them. No fabric or ribbons connecting upper and lower garments. Differentiate SHAPES and construction, not merely palette: JUZI wears a cheerful sporty orange-and-cream scoop-neck crop swim top with simple parallel shoulder straps, bold diagonal cream colorblock and a small citrus blossom emblem; matching orange briefs with broad cream side panels, clean athletic edges and no bows. PUDDING wears a soft buttery-yellow sweetheart bandeau swim top with slim shoulder straps, a small central caramel bow and restrained scalloped edge; separate cream/yellow swim briefs with small chocolate-brown side bows and caramel pudding motif. MILKCAP wears a fresh white/lavender asymmetric ONE-SHOULDER short swim top, a single strap with a small four-petal flower at the shoulder, minimal clean edges; separate lavender briefs with white curved side panels and one small flower decoration, no frills or bows on the swimsuit. All three should have ordinary modest sporty swim coverage, no extra cleavage detail, no suggestive pose, neutral cheerful game-character design. Maintain Pudding's cream-to-chocolate bob hair, blue eyes, pudding hairclip, small yellow hair bows, brown cat ears, fluffy color-point tail and Siamese head kitten. Maintain Milkcap's long white hair with lilac shadows and braids, blue eyes, white flower hair ornament, lavender hair bows, gray cat ears, fluffy gray-white tail and gray-white head kitten. Head and hair decorations remain; remove only collars/sleeves from SWIMWEAR. No swim rings, no water, no action poses, no floating props, no text labels, no borders. One wide canvas with genuinely transparent alpha outside the three figures, generous margins and no crop, no shadows halo smoky backdrop or gradients. The outfit differences should remain readable at small game-sprite scale."
+}

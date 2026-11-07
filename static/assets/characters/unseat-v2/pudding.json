@@ -1,0 +1,60 @@
+{
+  "image": "pudding-atlas.png",
+  "faceRestY": -35,
+  "worldPerSourcePixel": 0.21,
+  "baseTravelSign": -1,
+  "frames": [
+    {
+      "id": "contact",
+      "source": {
+        "x": 83,
+        "y": 24,
+        "width": 430,
+        "height": 578
+      },
+      "anchor": {
+        "x": 292,
+        "y": 310
+      }
+    },
+    {
+      "id": "release",
+      "source": {
+        "x": 533,
+        "y": 57,
+        "width": 482,
+        "height": 569
+      },
+      "anchor": {
+        "x": 817,
+        "y": 350
+      }
+    },
+    {
+      "id": "tumble",
+      "source": {
+        "x": 35,
+        "y": 644,
+        "width": 480,
+        "height": 478
+      },
+      "anchor": {
+        "x": 291,
+        "y": 880
+      }
+    },
+    {
+      "id": "follow",
+      "source": {
+        "x": 515,
+        "y": 680,
+        "width": 504,
+        "height": 445
+      },
+      "anchor": {
+        "x": 839,
+        "y": 923
+      }
+    }
+  ]
+}

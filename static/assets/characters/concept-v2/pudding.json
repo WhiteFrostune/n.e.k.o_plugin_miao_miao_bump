@@ -2,6 +2,7 @@
   "image": "pudding-expressions.png",
   "artSet": "concept-v2",
   "integratedFloat": true,
+  "opening": "../opening-v1/pudding.json",
   "frames": [
     {
       "name": "idle",
@@ -54,5 +55,7 @@
       "y": 561
     },
     "diameterInWorld": 80
-  }
+  },
+  "knockoutV2": "../unseat-v2/pudding-split.json",
+  "unseatV2": "../unseat-v2/pudding.json"
 }

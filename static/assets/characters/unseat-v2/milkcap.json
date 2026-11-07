@@ -1,0 +1,60 @@
+{
+  "image": "milkcap-atlas.png",
+  "faceRestY": -35,
+  "worldPerSourcePixel": 0.21,
+  "baseTravelSign": -1,
+  "frames": [
+    {
+      "id": "contact",
+      "source": {
+        "x": 15,
+        "y": 20,
+        "width": 468,
+        "height": 543
+      },
+      "anchor": {
+        "x": 249,
+        "y": 284
+      }
+    },
+    {
+      "id": "release",
+      "source": {
+        "x": 520,
+        "y": 37,
+        "width": 498,
+        "height": 550
+      },
+      "anchor": {
+        "x": 811,
+        "y": 321
+      }
+    },
+    {
+      "id": "tumble",
+      "source": {
+        "x": 8,
+        "y": 595,
+        "width": 494,
+        "height": 494
+      },
+      "anchor": {
+        "x": 286,
+        "y": 849
+      }
+    },
+    {
+      "id": "follow",
+      "source": {
+        "x": 522,
+        "y": 659,
+        "width": 500,
+        "height": 457
+      },
+      "anchor": {
+        "x": 845,
+        "y": 932
+      }
+    }
+  ]
+}

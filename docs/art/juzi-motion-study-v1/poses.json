@@ -1,0 +1,10 @@
+{
+  "image": "poses.png",
+  "headRestY": -30,
+  "headWidthInWorld": 90,
+  "frames": [
+    { "id": "impact", "source": { "x": 4, "y": 64, "width": 654, "height": 702 }, "headAnchor": { "x": 300, "y": 475 }, "headWidth": 634 },
+    { "id": "extend", "source": { "x": 656, "y": 9, "width": 667, "height": 769 }, "headAnchor": { "x": 970, "y": 390 }, "headWidth": 647 },
+    { "id": "tuck", "source": { "x": 1340, "y": 67, "width": 663, "height": 686 }, "headAnchor": { "x": 1675, "y": 470 }, "headWidth": 643 }
+  ]
+}

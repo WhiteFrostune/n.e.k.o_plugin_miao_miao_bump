@@ -6,7 +6,16 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import assert_viewport_fit, launch, ring_point, select_setting, set_slider, snapshot
+from browser_checks import (
+    assert_viewport_fit,
+    enable_dev_controls,
+    launch,
+    restart_pool,
+    ring_point,
+    select_setting,
+    set_slider,
+    snapshot,
+)
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +29,7 @@ def run(url):
         browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(viewport={"width": 1366, "height": 768})
+            enable_dev_controls(context)
             # Still use real browser frames and pointer input. Advance simulated frame
             # time faster so the full-match check does not spend minutes waiting.
             context.add_init_script("""(() => {
@@ -84,7 +94,7 @@ def run(url):
             page.wait_for_timeout(200)
             assert snapshot(page)["rings"] == before["rings"]
             page.evaluate("Object.defineProperty(document, 'hidden', {configurable: true, value: false}); document.dispatchEvent(new Event('visibilitychange'))")
-            page.click("#reset")
+            restart_pool(page)
             page.wait_for_timeout(750)
             assert snapshot(page)["battle"]["phase"] == "ready"
             assert snapshot(page)["battle"]["side"] == 0 and snapshot(page)["battle"]["turn"] == 1
@@ -116,6 +126,7 @@ def run(url):
             checks.append("battle HUD and controls fit all eight viewports and locales without page scrolling")
 
             mobile_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
+            enable_dev_controls(mobile_context)
             mobile = mobile_context.new_page()
             mobile.on("pageerror", lambda error: errors.append(str(error)))
             mobile.goto(url + "?locale=zh-CN")
@@ -128,7 +139,7 @@ def run(url):
             mobile.wait_for_function("miaoPlayground.snapshot().moving")
             assert mobile.locator("#game-mode").input_value() == "battle"
             assert_viewport_fit(mobile)
-            mobile.click("#reset")
+            restart_pool(mobile)
             assert snapshot(mobile)["battle"]["turn"] == 1
             mobile_context.close()
             checks.append("real touch drag launches an allied cat in the default battle")

@@ -6,7 +6,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
-from browser_checks import aim, assert_viewport_fit, launch, select_setting, snapshot
+from browser_checks import aim, assert_viewport_fit, enable_dev_controls, launch, restart_pool, select_setting, snapshot
 from playwright.sync_api import sync_playwright
 from scoring_browser_checks import tick
 
@@ -49,8 +49,9 @@ def run(url):
         browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(viewport={"width": 1366, "height": 768})
+            enable_dev_controls(context)
             context.add_init_script(CLOCK)
-            context.route("**/battle.js", lambda route: route.fulfill(body=source, content_type="text/javascript"))
+            context.route("**/battle.js*", lambda route: route.fulfill(body=source, content_type="text/javascript"))
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(url + "?locale=zh-CN")
@@ -102,7 +103,7 @@ def run(url):
             page.screenshot(path=str(artifacts / "scoreboard-acted.png"))
             checks.append("six real pixel portraits; keyboard selection and cancelling spend nothing; spent portraits keep their colours and names with a check")
 
-            page.locator("#reset").evaluate("e => e.click()")
+            restart_pool(page, programmatic=True)
             launch(page, 0, 9, 0)
             page.evaluate("testMatch.actors[3].hp=1; testMatch.handleContact({wall:false, ringIds:[0,3]}); testMatch.world._stop()")
             tick(page, milliseconds=0)
@@ -123,7 +124,7 @@ def run(url):
             assert page.evaluate("MiaoI18n.t('opponent.name')") in page.locator("#first-status").inner_text()
             checks.append("knockouts show a distinct waiting cross and live score; the next round restores portrait colour, HP and the opener")
 
-            page.locator("#reset").evaluate("e => e.click()")
+            restart_pool(page, programmatic=True)
             for width, height in [(1672, 941), (1366, 768), (1280, 720), (1024, 600), (872, 856),
                                   (800, 600), (640, 480), (844, 390), (390, 844), (390, 600), (360, 800), (320, 568)]:
                 page.set_viewport_size({"width": width, "height": height})
@@ -150,7 +151,7 @@ def run(url):
             page.locator('.cat-portrait[data-id="0"]').click(force=True)
             tick(page, milliseconds=0)
             page.screenshot(path=str(artifacts / "scoreboard-concept-state.png"))
-            page.locator("#reset").evaluate("e => e.click()")
+            restart_pool(page, programmatic=True)
             assert page.locator('.cat-portrait[data-status="available"]').count() == 6
             assert page.locator("#ally-score").inner_text() == "0"
             select_setting(page, "#game-mode", "practice")
@@ -164,6 +165,7 @@ def run(url):
             context.close()
 
             context = browser.new_context(viewport={"width": 390, "height": 844})
+            enable_dev_controls(context)
             context.route("**/assets/pudding.json", lambda route: route.abort())
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))

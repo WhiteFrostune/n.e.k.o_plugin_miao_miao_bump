@@ -9,9 +9,8 @@
       "mode": "builtin-imagegen",
       "transparent_background": true,
       "referenced_image_paths": [
-        "C:/Users/cai/.codex/generated_images/01a153e2-1374-7980-9636-3fd499abe0be/exec-839d6f83-180b-48ea-b537-b05a8856f1e5.png"
+        "docs/art/side-hud-concept-v1.png"
       ],
-      "generated_path": "C:/Users/cai/.codex/generated_images/01a15cf4-9ee1-7ce1-9d44-366dd53dce09/exec-f01b67d8-6c1e-4a0d-8f5a-3a514fde928b.png",
       "workspace_path": "static/assets/ui/side-capsule-v1.png",
       "dimensions": {
         "width": 1983,
@@ -32,9 +31,8 @@
       "mode": "builtin-imagegen",
       "transparent_background": true,
       "referenced_image_paths": [
-        "C:/Users/cai/.codex/generated_images/01a153e2-1374-7980-9636-3fd499abe0be/exec-839d6f83-180b-48ea-b537-b05a8856f1e5.png"
+        "docs/art/side-hud-concept-v1.png"
       ],
-      "generated_path": "C:/Users/cai/.codex/generated_images/01a15cf4-9ee1-7ce1-9d44-366dd53dce09/exec-b2c8938a-ce84-454e-a903-186063926f2a.png",
       "workspace_path": "static/assets/ui/side-circle-v1.png",
       "dimensions": {
         "width": 1254,
@@ -55,10 +53,9 @@
       "mode": "builtin-imagegen",
       "transparent_background": false,
       "referenced_image_paths": [
-        "E:/code/neko1/N.E.K.O/plugin/plugins/miao_miao_bump/static/assets/ui/beach-surround-v1.png",
-        "C:/Users/cai/.codex/generated_images/01a153e2-1374-7980-9636-3fd499abe0be/exec-839d6f83-180b-48ea-b537-b05a8856f1e5.png"
+        "static/assets/ui/beach-surround-v1.png",
+        "docs/art/side-hud-concept-v1.png"
       ],
-      "generated_path": "C:/Users/cai/.codex/generated_images/01a15cf4-9ee1-7ce1-9d44-366dd53dce09/exec-7d31491c-9465-40a6-8d54-63c8924523e5.png",
       "workspace_path": "static/assets/ui/beach-surround-side-v1.png",
       "dimensions": {
         "width": 1536,

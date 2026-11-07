@@ -1,21 +1,28 @@
 /* Local combat rules. No DOM, timers, network or model calls. */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./physics.js'));
-  else root.MiaoBattle = factory(root.MiaoPhysics);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (P) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./physics.js'), require('./motion.js'));
+  else root.MiaoBattle = factory(root.MiaoPhysics, root.MiaoMotion);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (P, M) {
   'use strict';
   const ROLES = Object.freeze([
     Object.freeze({ key: 'juzi', hp: 120, attack: 24, mass: 1.6, wallBonus: 0 }),
     Object.freeze({ key: 'pudding', hp: 85, attack: 18, mass: 1, wallBonus: 0.07 }),
     Object.freeze({ key: 'milkcap', hp: 100, attack: 20, mass: 1, wallBonus: 0 }),
   ]);
-  const FLIGHT_DURATION = 0.75;
+  const FLIGHT_DURATION = M.KNOCKOUT.duration;
+  const DEFAULT_ROLE_ORDER = Object.freeze([0, 1, 2]);
+
+  function roleOrder(keys) {
+    if (!Array.isArray(keys) || keys.length !== DEFAULT_ROLE_ORDER.length) return DEFAULT_ROLE_ORDER;
+    const roles = Array.from(keys, key => ROLES.findIndex(role => role.key === key));
+    return roles.includes(-1) || new Set(roles).size !== roles.length ? DEFAULT_ROLE_ORDER : roles;
+  }
 
   // Nearest free circle centre in the team's rectangle. A nearest feasible point
   // lies at the preferred point, an expanded-circle boundary, or an intersection.
   // Analytic candidates avoid a grid search missing small but legal gaps.
   function respawnPoint(map, cat, rings) {
-    const preferred = map.spawns[cat.team][cat.role];
+    const preferred = map.spawns[cat.team][cat.slot ?? cat.role];
     const box = map.spawnRegions[cat.team];
     const gap = P.RADIUS * 2 + 1;
     const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
@@ -52,7 +59,11 @@
   class Match {
     constructor(options = {}) {
       this.targetScore = Number.isInteger(options.targetScore) && options.targetScore > 0 ? options.targetScore : 5;
-      this.flightDuration = options.reducedMotion ? 0.25 : FLIGHT_DURATION;
+      this.flightDuration = options.reducedMotion ? M.KNOCKOUT.reducedDuration : FLIGHT_DURATION;
+      this.flightDurations = [];
+      // Explicit, in-page animation testing only; normal matches default to normal damage.
+      this.testOneHit = options.testOneHit === true;
+      this.rolesBySlot = [...roleOrder(options.allyRoster), ...roleOrder(options.rivalRoster)];
       this.world = new P.PoolWorld(options);
       this.map = this.world.map;
       this.world.onContact = contact => this.handleContact(contact);
@@ -71,9 +82,9 @@
       this.activeId = null;
       this.events = [];
       this.actors = this.map.spawns.flat().map(({ x, y }, id) => {
-        const role = id % 3;
+        const role = this.rolesBySlot[id];
         const stats = ROLES[role];
-        return { id, role, team: id < 3 ? 0 : 1, hp: stats.hp, maxHp: stats.hp,
+        return { id, role, slot: id % 3, team: id < 3 ? 0 : 1, hp: stats.hp, maxHp: stats.hp,
           attack: stats.attack, mass: stats.mass, wallBonus: stats.wallBonus,
           shieldUsed: false, removed: false, usedThisRound: false, reviveAtRound: null, x, y };
       });
@@ -111,9 +122,9 @@
       // The acting TEAM owns the damage. Its cat can be stationary or unselected.
       const attacker = a.team === this.side ? a : b;
       const defender = a.team === this.side ? b : a;
-      const guard = defender.role === 2 && !defender.shieldUsed ? 8 : 0;
+      const guard = !this.testOneHit && defender.role === 2 && !defender.shieldUsed ? 8 : 0;
       if (guard) defender.shieldUsed = true;
-      const damage = Math.min(defender.hp, Math.max(0, attacker.attack - guard));
+      const damage = this.testOneHit ? defender.hp : Math.min(defender.hp, Math.max(0, attacker.attack - guard));
       defender.hp -= damage;
       const rings = this.world.snapshot();
       const position = rings.find(ring => ring.id === defender.id) || defender;
@@ -128,15 +139,27 @@
         }
         if (Math.hypot(dx, dy) < 1e-7) dx = defender.team === 0 ? -1 : 1;
         const length = Math.hypot(dx, dy);
+        const incoming=contact.kinematics?.find(item=>item.id===defender.id)||position;
+        const incomingSource=contact.kinematics?.find(item=>item.id===attacker.id)||source;
+        const finite=n=>Number.isFinite(n)?n:0;
+        const motion={velocity:{x:finite(incoming.vx),y:finite(incoming.vy)},
+          sourceVelocity:{x:finite(incomingSource.vx),y:finite(incomingSource.vy)},
+          mass:incoming.mass>0?incoming.mass:defender.mass,
+          sourceMass:incomingSource.mass>0?incomingSource.mass:attacker.mass,
+          restitution:this.world.params.bounce};
         defender.removed = true;
         defender.reviveAtRound = this.round + 1;
         defender.usedThisRound = true;
         defender.x = position.x; defender.y = position.y;
         this.scores[attacker.team] += 1;
         this.world.remove([defender.id]);
-        this.presentationTime = this.flightDuration;
+        const duration = this.flightDurations[defender.role] ?? this.flightDuration;
+        this.presentationTime = Math.max(this.presentationTime, duration);
         this.events.push({ type: 'retreat', id: defender.id, role: defender.role, team: defender.team,
-          x: position.x, y: position.y, direction: { x: dx / length, y: dy / length }, duration: this.flightDuration });
+          attacker:attacker.id,contactPoint:{x:Number.isFinite(contact.x)?contact.x:(source.x+position.x)/2,
+            y:Number.isFinite(contact.y)?contact.y:(source.y+position.y)/2},
+          x: position.x, y: position.y, direction: { x: dx / length, y: dy / length }, duration, motion,
+          simulationTime:this.world.elapsed });
       }
     }
 
@@ -174,7 +197,8 @@
       } else {
         this.revive();
         const other = 1 - this.side;
-        if (!this.available(0).length && !this.available(1).length) {
+        const otherHasCats = this.actors.some(cat => cat.team === other && cat.hp > 0 && !cat.removed);
+        if (!otherHasCats || (!this.available(0).length && !this.available(1).length)) {
           this.round += 1;
           this.roundStarter = 1 - this.roundStarter;
           this.revive();
@@ -266,5 +290,5 @@
     return best;
   }
 
-  return { Match, ROLES, chooseShot, respawnPoint, FLIGHT_DURATION };
+  return { Match, ROLES, roleOrder, chooseShot, respawnPoint, FLIGHT_DURATION };
 });

@@ -1,0 +1,60 @@
+{
+  "image": "juzi-atlas.png",
+  "faceRestY": -35,
+  "worldPerSourcePixel": 0.21,
+  "baseTravelSign": -1,
+  "frames": [
+    {
+      "id": "contact",
+      "source": {
+        "x": 15,
+        "y": 24,
+        "width": 439,
+        "height": 542
+      },
+      "anchor": {
+        "x": 228,
+        "y": 294
+      }
+    },
+    {
+      "id": "release",
+      "source": {
+        "x": 525,
+        "y": 39,
+        "width": 492,
+        "height": 538
+      },
+      "anchor": {
+        "x": 797,
+        "y": 315
+      }
+    },
+    {
+      "id": "tumble",
+      "source": {
+        "x": 15,
+        "y": 598,
+        "width": 464,
+        "height": 481
+      },
+      "anchor": {
+        "x": 283,
+        "y": 845
+      }
+    },
+    {
+      "id": "follow",
+      "source": {
+        "x": 513,
+        "y": 640,
+        "width": 503,
+        "height": 424
+      },
+      "anchor": {
+        "x": 823,
+        "y": 887
+      }
+    }
+  ]
+}

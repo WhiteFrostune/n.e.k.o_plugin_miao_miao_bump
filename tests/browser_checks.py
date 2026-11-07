@@ -7,13 +7,29 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 
+from flight_fixture import development_html
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def enable_dev_controls(context):
+    html = development_html()
+    context.route("**/static/index.html*", lambda route: route.fulfill(body=html, content_type="text/html"))
+
+
 def snapshot(page):
     return page.evaluate("window.miaoPlayground.snapshot()")
+
+
+def restart_pool(page, *, programmatic=False):
+    reset = page.locator("#reset")
+    if programmatic:
+        reset.evaluate("button => button.click()")
+    else:
+        reset.click()
+    if page.locator("#restart-dialog").is_visible():
+        page.locator("#confirm-restart").click()
 
 
 def ring_point(page, ring_id=0):
@@ -62,12 +78,14 @@ def assert_viewport_fit(page):
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), page.evaluate("({locale:document.documentElement.lang,width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth})")
     assert page.evaluate("document.documentElement.scrollHeight <= innerHeight + 1")
     pool = page.locator("#pool").bounding_box()
-    controls = page.locator(".controls").bounding_box()
     assert pool["width"] > 100 and pool["height"] > 60
     map_state = snapshot(page)["map"]
     assert abs(pool["width"] / pool["height"] - map_state["width"] / map_state["height"]) < 0.01
-    assert pool["y"] >= 0 and pool["y"] + pool["height"] <= controls["y"]
-    assert controls["y"] + controls["height"] <= viewport["height"] + 1
+    assert pool["x"] >= 0 and pool["y"] >= 0
+    assert pool["x"] + pool["width"] <= viewport["width"] + 1
+    assert pool["y"] + pool["height"] <= viewport["height"] + 1
+    # The controls wrapper uses display:contents in the side layout. Check
+    # its visible buttons below rather than requiring a former bottom panel.
     for selector in ["#layout", "#reset", "#show-tuning", "#show-art"]:
         if not page.locator(selector).is_visible():
             continue
@@ -87,6 +105,7 @@ def run(url):
         browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(viewport={"width": 1360, "height": 960}, device_scale_factor=1)
+            enable_dev_controls(context)
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.on("request", lambda request: external.append(request.url) if not request.url.startswith(url.split('/static')[0]) else None)
@@ -175,7 +194,7 @@ def run(url):
             # Each cat may hit a wall again at a different time; their rebound
             # expressions need not be visible in the exact same sampled frame.
             page.wait_for_function("window.miaoPlayground.snapshot().art.characters[1].activeFrame === 2", polling="raf")
-            page.click("#reset")
+            restart_pool(page)
             assert snapshot(page)["art"]["activeFrame"] == 0
             checks.append("collision drives impact/rebound on both floats; reset clears reactions")
 
@@ -196,7 +215,7 @@ def run(url):
             checks.append({"chain shot": {"seconds": round(state["elapsed"], 3), "impacts": state["collisions"]}})
 
             launch(page, pull_x=-160, pull_y=30)
-            page.click("#reset")
+            restart_pool(page)
             before = snapshot(page)
             page.wait_for_timeout(180)
             after = snapshot(page)
@@ -234,7 +253,7 @@ def run(url):
             page.evaluate("Object.defineProperty(document, 'hidden', {configurable: true, value: false}); document.dispatchEvent(new Event('visibilitychange'))")
             page.wait_for_timeout(160)
             assert snapshot(page)["elapsed"] > paused["elapsed"]
-            page.click("#reset")
+            restart_pool(page)
             page.evaluate("window.dispatchEvent(new PageTransitionEvent('pagehide', {persisted: true}))")
             assert snapshot(page)["suspended"]
             page.evaluate("window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}))")
@@ -248,7 +267,7 @@ def run(url):
                 page.screenshot(path=str(artifacts / f"viewport-{width}x{height}.png"))
             page.set_viewport_size({"width": 520, "height": 900})
             launch(page, pull_x=120, pull_y=30)
-            page.click("#reset")
+            restart_pool(page)
             assert not snapshot(page)["moving"]
             page.screenshot(path=str(artifacts / "compact-idle.png"), full_page=True)
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
@@ -256,6 +275,7 @@ def run(url):
             checks.append("eight viewport sizes: full map, bottom controls and reset visible without scrolling; scaled input works")
 
             mobile_context = browser.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True)
+            enable_dev_controls(mobile_context)
             mobile = mobile_context.new_page()
             mobile.on("pageerror", lambda error: errors.append(str(error)))
             mobile.goto(url + "?locale=zh-CN&mode=practice")
@@ -266,7 +286,7 @@ def run(url):
             client.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": x - 130 * scale, "y": y}]})
             client.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
             mobile.wait_for_function("window.miaoPlayground.snapshot().moving")
-            mobile.click("#reset")
+            restart_pool(mobile)
             mobile.screenshot(path=str(artifacts / "mobile-idle.png"), full_page=True)
             assert_viewport_fit(mobile)
             checks.append("real touch drag at phone viewport")
@@ -292,7 +312,7 @@ def run(url):
                 assert "占位泳圈" in fallback.locator("#art-note").inner_text()
                 fallback.keyboard.press("Escape")
                 launch(fallback, missing_id)
-                fallback.click("#reset")
+                restart_pool(fallback)
                 fallback.close()
             fallback = context.new_page()
             fallback.route("**/assets/*-expressions.png", lambda route: route.abort())
@@ -311,7 +331,7 @@ def run(url):
                 assert not snapshot(fallback)["map"]["loaded"]
                 assert all(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"])
                 launch(fallback)
-                fallback.click("#reset")
+                restart_pool(fallback)
                 assert_viewport_fit(fallback)
                 fallback.screenshot(path=str(artifacts / f"fallback-{missing}.png"))
                 fallback.close()

@@ -23,7 +23,7 @@ async def test_startup_registers_the_playground_without_background_work() -> Non
     result = await plugin.on_startup()
     assert result.is_ok()
     assert registered == [(("static",), {"cache_control": "no-store"})]
-    assert actions[0]["target"] == "/plugin/miao_miao_bump/ui/index.html"
+    assert actions[0]["target"] == "/plugin/miao_miao_bump/ui/preparation.html"
     assert actions[0]["label"]["$i18n"] == "actions.open"
     assert (await plugin.on_shutdown()).is_ok()
 
@@ -53,11 +53,37 @@ async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch, ja
         for suffix, content_type in [
             ("", "text/html"),
             ("/index.html", "text/html"),
+            ("/preparation.html", "text/html"),
             ("/game.js", javascript_mime),
             ("/layout.css", "text/css"),
             ("/physics.js", javascript_mime),
             ("/maps.js", javascript_mime),
             ("/battle.js", javascript_mime),
+            ("/motion.js", javascript_mime),
+            ("/landing-water.js", javascript_mime),
+            ("/landing-water-renderer.js", javascript_mime),
+            ("/contact-feedback.js", javascript_mime),
+            ("/water-wake.js", javascript_mime),
+            ("/water-wake-renderer.js", javascript_mime),
+            ("/water-surface.js", javascript_mime),
+            ("/water-surface-renderer.js", javascript_mime),
+            *[(f"/assets/characters/opening-v1/{key}{suffix}", mime)
+              for key in ["juzi", "pudding", "milkcap"]
+              for suffix, mime in [(".json", "application/json"), (".png", "image/png")]],
+            ("/knockout-action.js", javascript_mime),
+            ("/knockout-renderer.js", javascript_mime),
+            ("/unseat-action.js", javascript_mime),
+            ("/unseat-momentum.js", javascript_mime),
+            ("/unseat-renderer.js", javascript_mime),
+            ("/knockout-camera.js", javascript_mime),
+            ("/impact-beat.js", javascript_mime),
+            ("/impact-contact.js", javascript_mime),
+            ("/impact-contact-renderer.js", javascript_mime),
+            ("/assets/characters/unseat-v1/juzi.json", "application/json"),
+            *[(f"/assets/characters/unseat-v2/{key}{suffix}", mime)
+              for key in ["juzi", "pudding", "milkcap"]
+              for suffix, mime in [(".json", "application/json"), ("-split.json", "application/json"), ("-atlas.png", "image/png")]],
+            ("/assets/characters/unseat-v1/poses.png", "image/png"),
             ("/sound.js", javascript_mime),
             ("/art.js", javascript_mime),
             ("/assets/juzi.json", "application/json"),
@@ -68,6 +94,13 @@ async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch, ja
             ("/assets/milkcap-expressions.png", "image/png"),
             ("/assets/characters/concept-v2/juzi.json", "application/json"),
             ("/assets/characters/concept-v2/juzi-expressions.png", "image/png"),
+            ("/assets/characters/knockout-v1/juzi.json", "application/json"),
+            ("/assets/characters/knockout-v1/juzi-airborne-v1.png", "image/png"),
+            ("/assets/characters/knockout-v1/juzi-airborne-v2.png", "image/png"),
+            ("/assets/characters/knockout-v1/juzi-airborne-v3.png", "image/png"),
+            ("/assets/characters/knockout-v1/juzi-ring-v1.png", "image/png"),
+            ("/assets/characters/knockout-poses-v1/juzi.json", "application/json"),
+            ("/assets/characters/knockout-poses-v1/juzi-poses.png", "image/png"),
             ("/assets/characters/concept-v2/pudding.json", "application/json"),
             ("/assets/characters/concept-v2/pudding-expressions.png", "image/png"),
             ("/assets/characters/concept-v2/milkcap.json", "application/json"),

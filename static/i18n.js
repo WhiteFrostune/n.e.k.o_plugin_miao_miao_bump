@@ -29,7 +29,8 @@
     document.title = t('plugin.name');
     document.querySelectorAll('[data-t]').forEach(element => { element.textContent = t(element.dataset.t); });
     document.querySelectorAll('[data-aria]').forEach(element => { element.setAttribute('aria-label', t(element.dataset.aria)); });
-    document.getElementById('language').value = locale;
+    const language = document.getElementById('language');
+    if (language) language.value = locale;
   }
 
   function t(key) {

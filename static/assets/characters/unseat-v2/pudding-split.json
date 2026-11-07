@@ -1,0 +1,63 @@
+{
+  "character": "pudding",
+  "parts": [
+    {
+      "id": "float",
+      "image": "pudding-atlas.png",
+      "source": {
+        "x": 25,
+        "y": 1183,
+        "width": 490,
+        "height": 305
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 60
+      },
+      "drawBox": {
+        "x": -40,
+        "y": -22,
+        "width": 80.0,
+        "height": 49.795918367346935
+      },
+      "flight": {
+        "delay": 0.055,
+        "departure": 0.94,
+        "drift": 0.22,
+        "turn": -1.7,
+        "growth": 0.24,
+        "squeezeX": 0.36,
+        "squeezeY": 0.16
+      }
+    },
+    {
+      "id": "character",
+      "image": "pudding-atlas.png",
+      "source": {
+        "x": 83,
+        "y": 24,
+        "width": 430,
+        "height": 578
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 129
+      },
+      "drawBox": {
+        "x": -43.89,
+        "y": -95.06,
+        "width": 90.3,
+        "height": 121.38
+      },
+      "flight": {
+        "delay": 0,
+        "departure": 0.78,
+        "drift": 0.29,
+        "turn": 0.85,
+        "growth": 0.5,
+        "squeezeX": 0.12,
+        "squeezeY": 0.24
+      }
+    }
+  ]
+}

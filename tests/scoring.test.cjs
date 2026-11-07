@@ -16,6 +16,43 @@ function knockOut(match, attacker, target) {
   match.handleContact(hit(attacker, target));
 }
 
+test('a reordered lineup keeps character stats and respawns in the selected slot', () => {
+  const match = new B.Match({ map: square, allyRoster: ['milkcap', 'juzi', 'pudding'],
+    rivalRoster: ['pudding', 'pudding', 'invalid'] });
+  try {
+    assert.deepEqual(match.actors.map(cat => cat.role), [2, 0, 1, 0, 1, 2]);
+    const cat = match.actors[0];
+    assert.equal(cat.maxHp, B.ROLES[2].hp);
+    assert.equal(cat.attack, B.ROLES[2].attack);
+    assert.deepEqual({ x: cat.x, y: cat.y }, match.map.spawns[0][0]);
+    Object.assign(cat, { removed: true, hp: 0, reviveAtRound: match.round });
+    match.world.remove([cat.id]);
+    match.revive();
+    assert.equal(cat.hp, B.ROLES[2].hp);
+    assert.deepEqual({ x: cat.x, y: cat.y }, match.map.spawns[0][0]);
+    match.reset();
+    assert.deepEqual(match.actors.map(actor => actor.role), [2, 0, 1, 0, 1, 2]);
+  } finally { match.destroy(); }
+});
+
+test('mixed knockout durations wait for the longest active presentation and preserve already emitted events', () => {
+  const match=new B.Match({targetScore:2});
+  try {
+    match.flightDurations=[1.45,1.1,1.1];
+    match.launch(0,{x:20,y:0});knockOut(match,0,3);knockOut(match,0,4);
+    const events=match.drainEvents().filter(event=>event.type==='retreat');
+    assert.deepEqual(events.map(event=>event.duration),[1.45,1.1]);
+    assert.equal(match.presentationTime,1.45);
+    match.world._stop();
+    // Changing future animation preferences cannot shorten a flight in progress.
+    match.flightDurations=[.25,.25,.25];match.flightDuration=.25;
+    for(let i=0;i<14;i++)match.advance(100);
+    assert.equal(match.phase,'resolving');assert.equal(match.winner,null);
+    match.advance(50);assert.equal(match.phase,'over');
+    assert.equal(events[0].duration,1.45);
+  } finally {match.destroy();}
+});
+
 test('a real lethal contact removes its body and pair caches at the step boundary, allowing follow-through', () => {
   const match = new B.Match();
   try {
@@ -54,7 +91,11 @@ test('each life scores once; reaching the target finishes the current chain and 
     assert.equal(match.phase, 'resolving');
     assert.equal(match.canLaunch(1), false);
     assert.equal(match.drainEvents().some(event => event.type === 'result'), false);
-    for (let i = 0; i < 6; i += 1) match.advance(100);
+    // Leave 50 ms of the configured presentation window, independent of tuning.
+    let remaining = B.FLIGHT_DURATION * 1000 - 150;
+    while (remaining > 1e-6) {
+      const step = Math.min(100, remaining); match.advance(step); remaining -= step;
+    }
     assert.equal(match.phase, 'resolving');
     match.advance(50);
     assert.equal(match.phase, 'over');
@@ -66,26 +107,30 @@ test('each life scores once; reaching the target finishes the current chain and 
   } finally { match.destroy(); }
 });
 
-test('a whole team leaving below target does not lose; the CPU completes remaining opportunities without targets', () => {
-  const match = new B.Match();
-  try {
-    match.side = 1;
-    match.launch(3, { x: -20, y: 0 });
-    for (const id of [0, 1, 2]) knockOut(match, 3, id);
-    settle(match);
-    assert.equal(match.phase, 'ready');
-    assert.equal(match.winner, null);
-    assert.equal(match.side, 1);
-    for (let i = 0; i < 2; i += 1) {
-      const shot = B.chooseShot(match.snapshot());
-      assert.ok(shot && match.launch(shot.id, shot));
+test('either team wiping the other below target advances the round after the flights', () => {
+  for (const side of [0, 1]) {
+    const match = new B.Match();
+    try {
+      match.side = side;
+      const attacker = side * 3;
+      const defenders = match.actors.filter(cat => cat.team !== side);
+      assert.ok(match.launch(attacker, { x: side === 0 ? 20 : -20, y: 0 }));
+      for (const cat of defenders) knockOut(match, attacker, cat.id);
+      assert.equal(match.available(side).length, 2);
+      match.world._stop();
+      match.advance(100);
+      assert.equal(match.phase, 'resolving');
+      assert.equal(match.round, 1);
       settle(match);
-    }
-    assert.equal(match.round, 2);
-    assert.equal(match.side, 1);
-    assert.ok(match.actors.every(cat => cat.hp === cat.maxHp && !cat.removed));
-    assert.deepEqual(match.scores, [0, 3]);
-  } finally { match.destroy(); }
+      assert.equal(match.winner, null);
+      assert.equal(match.round, 2);
+      assert.equal(match.side, 1);
+      assert.deepEqual(match.snapshot().remainingActions, [3, 3]);
+      assert.ok(defenders.every(cat => cat.hp === cat.maxHp && !cat.removed));
+      assert.deepEqual(match.scores, side === 0 ? [3, 0] : [0, 3]);
+      assert.equal(match.drainEvents().filter(event => event.type === 'round').length, 1);
+    } finally { match.destroy(); }
+  }
 });
 
 test('next-round return restores HP, mass, passive and action without moving or healing survivors on either map', () => {
@@ -97,15 +142,10 @@ test('next-round return restores HP, mass, passive and action without moving or 
       knockOut(match, 0, 3);
       knockOut(match, 0, 4);
       knockOut(match, 0, 5);
-      settle(match);
-      assert.equal(match.world.snapshot().length, 3);
-      for (const id of [1, 2]) {
-        match.launch(id, { x: 20, y: 0 });
-        if (id === 1) settle(match);
-      }
       while (match.world.moving) match.world.step();
       const survivors = match.world.snapshot();
-      match.advance(1);
+      assert.equal(survivors.length, 3);
+      settle(match);
       assert.equal(match.round, 2);
       assert.equal(match.side, 1);
       assert.deepEqual(match.world.snapshot().filter(ring => ring.id < 3), survivors);

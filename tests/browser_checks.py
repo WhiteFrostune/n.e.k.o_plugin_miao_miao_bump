@@ -118,7 +118,7 @@ def run(url):
             assert snapshot(page)["art"]["frameCount"] == 3
             assert snapshot(page)["map"]["loaded"]
             assert snapshot(page)["map"]["bounds"] == {"left": 44, "top": 44, "right": 916, "bottom": 556}
-            assert all(cat["loaded"] and cat["frameCount"] == 3 for cat in snapshot(page)["art"]["characters"])
+            assert all(cat["loaded"] and cat["frameCount"] == 3 for cat in snapshot(page)["art"]["characters"][:3])
             assert_viewport_fit(page)
             assert snapshot(page)["art"]["collisionRadius"] == 40
             page.screenshot(path=str(artifacts / "desktop-idle.png"), full_page=True)
@@ -304,7 +304,8 @@ def run(url):
                 fallback.goto(url + "?locale=zh-CN&mode=practice&art=classic")
                 fallback.wait_for_function("Boolean(window.miaoPlayground)")
                 cats = snapshot(fallback)["art"]["characters"]
-                assert [cat["loaded"] for cat in cats] == [i != missing_id for i in range(3)]
+                assert [cat["loaded"] for cat in cats[:3]] == [i != missing_id for i in range(3)]
+                assert all(cat["loaded"] for cat in cats[3:])
                 x, y, _ = ring_point(fallback, missing_id)
                 fallback.mouse.click(x, y)
                 fallback.click("#show-art")
@@ -318,7 +319,7 @@ def run(url):
             fallback.route("**/assets/*-expressions.png", lambda route: route.abort())
             fallback.goto(url + "?locale=zh-CN&mode=practice&art=classic")
             fallback.wait_for_function("Boolean(window.miaoPlayground)")
-            assert not any(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"])
+            assert not any(cat["loaded"] for cat in snapshot(fallback)["art"]["characters"][:3])
             launch(fallback)
             fallback.close()
             checks.append("each sprite fails independently; other characters and fallback launches remain available, including all missing")

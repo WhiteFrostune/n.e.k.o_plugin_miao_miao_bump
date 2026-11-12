@@ -132,6 +132,8 @@
   "skin.soundOn": "소리",
   "skin.soundOff": "음소거",
   "hud.aiming": "놓아서 발사",
+  "hud.canceling": "놓아서 취소",
+  "ui.cancelLaunch": "여기로 끌어 발사 취소",
   "opponent.name": "林悠怡",
   "ui.launchHint": "고양이를 당겨 놓으면 발사",
   "test.oneHit": "테스트: 한 번에 탈락",

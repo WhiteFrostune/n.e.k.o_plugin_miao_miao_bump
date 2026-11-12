@@ -1,0 +1,14 @@
+{
+  "image": "yui-lolita-pool.png",
+  "integratedFloat": true,
+  "opening": "yui-lolita-opening.json",
+  "knockout": "yui-lolita-split.json",
+  "unseat": "yui-lolita-unseat.json",
+  "frames": [{ "name": "idle", "x": 74, "y": 27, "width": 1107, "height": 1212 }],
+  "drawBox": { "x": -51, "y": -90, "width": 102, "height": 112 },
+  "pixelGrid": { "width": 82, "height": 90 },
+  "portraitBox": { "x": 10, "y": 0, "width": 62, "height": 62 },
+  "portraitResolution": 64,
+  "hud": { "healthY": -106, "nameY": 28 },
+  "collisionRadius": 40
+}

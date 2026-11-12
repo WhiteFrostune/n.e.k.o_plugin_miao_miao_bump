@@ -1,0 +1,14 @@
+{
+  "image": "yui-pool.png",
+  "integratedFloat": true,
+  "opening": "yui-opening.json",
+  "knockout": "yui-split.json",
+  "unseat": "yui-unseat.json",
+  "frames": [{ "name": "idle", "x": 60, "y": 32, "width": 1140, "height": 1211 }],
+  "drawBox": { "x": -48, "y": -82, "width": 96, "height": 102 },
+  "pixelGrid": { "width": 80, "height": 85 },
+  "portraitBox": { "x": 10, "y": 0, "width": 60, "height": 60 },
+  "portraitResolution": 64,
+  "hud": { "healthY": -98, "nameY": 26 },
+  "collisionRadius": 40
+}

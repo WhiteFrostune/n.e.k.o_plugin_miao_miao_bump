@@ -585,15 +585,35 @@ def build() -> None:
 def build_full_playtest(game_source: str) -> None:
     FULL_OUT.mkdir(parents=True, exist_ok=True)
     base = '<meta charset="utf-8"><base href="/static/">'
-    revision = hashlib.sha256(game_source.encode("utf-8")).hexdigest()[:12]
+    def version_scripts(html: str) -> str:
+        def version(match: re.Match) -> str:
+            name = match[1]
+            content = game_source.encode("utf-8") if name == "game.js" else (ROOT / "static" / name).read_bytes()
+            return f'src="{name}?v={hashlib.sha256(content).hexdigest()[:12]}"'
+
+        return re.sub(r'src="((?:game|battle|art|preparation)\.js)(?:\?[^"]*)?"', version, html)
+
     battle = development_html().replace('<meta charset="utf-8">', base)
     battle = battle.replace('<html lang="en">', '<html lang="en" data-full-playtest>')
-    battle = re.sub(r'src="game\.js(?:\?[^\"]*)?"', f'src="game.js?v={revision}"', battle)
     lobby = (ROOT / "static/preparation.html").read_text(encoding="utf-8")
     lobby = lobby.replace('<meta charset="utf-8">', base)
+    lobby = lobby.replace(
+        '</head>',
+        '  <style>\n'
+        '    .picker-picture { position: relative; }\n'
+        '    #picker-preview-replay { position: absolute; right: 0; bottom: 0; padding: 5px 9px;\n'
+        '      border: 1px solid #8dd4f2; border-radius: 999px; background: #164572; color: white;\n'
+        '      font-size: 12px; font-weight: bold; cursor: pointer; }\n'
+        '  </style>\n</head>',
+    )
+    lobby = lobby.replace(
+        'height="200" aria-hidden="true"></canvas></div>',
+        'height="200" aria-hidden="true"></canvas>'
+        '<button id="picker-preview-replay" type="button" hidden>重播亮相</button></div>',
+    )
     lobby = lobby.replace("<h1>备战大厅</h1>", "<h1>备战大厅 · 完整测试版</h1>")
-    (FULL_OUT / "index.html").write_text(battle, encoding="utf-8")
-    (FULL_OUT / "preparation.html").write_text(lobby, encoding="utf-8")
+    (FULL_OUT / "index.html").write_text(version_scripts(battle), encoding="utf-8")
+    (FULL_OUT / "preparation.html").write_text(version_scripts(lobby), encoding="utf-8")
     print(FULL_OUT / "preparation.html")
 
 

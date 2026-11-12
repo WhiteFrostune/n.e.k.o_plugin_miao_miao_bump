@@ -8,6 +8,12 @@
     Object.freeze({ key: 'juzi', hp: 120, attack: 24, mass: 1.6, wallBonus: 0 }),
     Object.freeze({ key: 'pudding', hp: 85, attack: 18, mass: 1, wallBonus: 0.07 }),
     Object.freeze({ key: 'milkcap', hp: 100, attack: 20, mass: 1, wallBonus: 0 }),
+    Object.freeze({ key: 'yui', hp: 100, attack: 20, mass: 1, wallBonus: 0, skill: 'extraShot',
+      artMetadata: 'assets/characters/yui-v1/yui.json',
+      portrait: 'assets/characters/yui-v1/yui-standing.png' }),
+    Object.freeze({ key: 'yui-lolita', hp: 105, attack: 16, mass: 1, wallBonus: 0, skill: 'heal', shortName: 'character.4.short',
+      artMetadata: 'assets/characters/yui-v1/yui-lolita.json',
+      portrait: 'assets/characters/yui-v1/yui-lolita-standing.png' }),
   ]);
   const FLIGHT_DURATION = M.KNOCKOUT.duration;
   const DEFAULT_ROLE_ORDER = Object.freeze([0, 1, 2]);
@@ -16,6 +22,16 @@
     if (!Array.isArray(keys) || keys.length !== DEFAULT_ROLE_ORDER.length) return DEFAULT_ROLE_ORDER;
     const roles = Array.from(keys, key => ROLES.findIndex(role => role.key === key));
     return roles.includes(-1) || new Set(roles).size !== roles.length ? DEFAULT_ROLE_ORDER : roles;
+  }
+
+  function randomRoster(random = Math.random) {
+    const keys = ROLES.map(role => role.key);
+    const size = DEFAULT_ROLE_ORDER.length;
+    for (let slot = 0; slot < size; slot += 1) {
+      const pick = slot + Math.floor(random() * (keys.length - slot));
+      [keys[slot], keys[pick]] = [keys[pick], keys[slot]];
+    }
+    return keys.slice(0, size);
   }
 
   // Nearest free circle centre in the team's rectangle. A nearest feasible point
@@ -80,6 +96,8 @@
       this.scores = [0, 0];
       this.presentationTime = 0;
       this.activeId = null;
+      this.bonusId = null;
+      this.scoreAtLaunch = 0;
       this.events = [];
       this.actors = this.map.spawns.flat().map(({ x, y }, id) => {
         const role = this.rolesBySlot[id];
@@ -93,12 +111,12 @@
     }
 
     available(team = this.side) {
-      return this.actors.filter(cat => cat.team === team && cat.hp > 0 && !cat.removed && !cat.usedThisRound);
+      return this.actors.filter(cat => cat.team === team && cat.hp > 0 && !cat.removed
+        && (!cat.usedThisRound || cat.id === this.bonusId));
     }
 
     canLaunch(id) {
-      const cat = this.actors.find(item => item.id === id);
-      return this.phase === 'ready' && Boolean(cat && cat.hp > 0 && !cat.removed && !cat.usedThisRound && cat.team === this.side);
+      return this.phase === 'ready' && this.available().some(cat => cat.id === id);
     }
 
     launch(id, velocity) {
@@ -107,9 +125,12 @@
       // Equal launch energy: heavier Juzi resists displacement but starts more slowly.
       const scale = 1 / Math.sqrt(cat.mass);
       if (!this.world.launch(id, { x: velocity.x * scale, y: velocity.y * scale })) return false;
+      // Selecting or aiming another cat keeps the bonus until a real shot starts.
+      if (id !== this.bonusId) this.bonusId = null;
       cat.usedThisRound = true;
       for (const defender of this.actors) if (defender.team !== this.side) defender.shieldUsed = false;
       this.activeId = id;
+      this.scoreAtLaunch = this.scores[this.side];
       this.phase = 'moving';
       this.events.push({ type: 'launch', id });
       return true;
@@ -118,7 +139,19 @@
     handleContact(contact) {
       if (this.phase !== 'moving' || contact.wall || contact.ringIds.length !== 2) return;
       const [a, b] = contact.ringIds.map(id => this.actors.find(cat => cat.id === id));
-      if (!a || !b || a.hp <= 0 || b.hp <= 0 || a.team === b.team) return;
+      if (!a || !b || a.hp <= 0 || b.hp <= 0) return;
+      if (a.team === b.team) {
+        const healer = a.id === this.activeId ? a : b.id === this.activeId ? b : null;
+        if (healer && ROLES[healer.role].skill === 'heal') {
+          const target = healer === a ? b : a;
+          const amount = Math.min(healer.attack, target.maxHp - target.hp);
+          if (amount > 0) {
+            target.hp += amount;
+            this.events.push({ type: 'heal', id: target.id, source: healer.id, amount });
+          }
+        }
+        return;
+      }
       // The acting TEAM owns the damage. Its cat can be stationary or unselected.
       const attacker = a.team === this.side ? a : b;
       const defender = a.team === this.side ? b : a;
@@ -190,6 +223,9 @@
     }
 
     finishAction() {
+      const active = this.actors[this.activeId];
+      const wasBonus = this.bonusId !== null;
+      this.bonusId = null;
       if (this.scores.some(score => score >= this.targetScore)) {
         this.phase = 'over';
         this.winner = this.scores[0] === this.scores[1] ? 'draw' : this.scores[0] > this.scores[1] ? 0 : 1;
@@ -198,6 +234,15 @@
         this.revive();
         const other = 1 - this.side;
         const otherHasCats = this.actors.some(cat => cat.team === other && cat.hp > 0 && !cat.removed);
+        if (!wasBonus && active && ROLES[active.role].skill === 'extraShot' && active.hp > 0 && otherHasCats
+          && this.scores[this.side] > this.scoreAtLaunch) {
+          this.bonusId = active.id;
+          this.turn += 1;
+          this.activeId = null;
+          this.phase = 'ready';
+          this.events.push({ type: 'extraShot', id: active.id });
+          return;
+        }
         if (!otherHasCats || (!this.available(0).length && !this.available(1).length)) {
           this.round += 1;
           this.roundStarter = 1 - this.roundStarter;
@@ -218,7 +263,7 @@
       return { side: this.side, turn: this.turn, round: this.round, roundStarter: this.roundStarter,
         scores: [...this.scores], targetScore: this.targetScore, presentationTime: this.presentationTime,
         remainingActions: [this.available(0).length, this.available(1).length],
-        phase: this.phase, winner: this.winner, activeId: this.activeId, map: this.map,
+        phase: this.phase, winner: this.winner, activeId: this.activeId, bonusId: this.bonusId, map: this.map,
         actors: this.actors.map(cat => ({ ...cat, ...rings.find(ring => ring.id === cat.id) })) };
     }
 
@@ -231,7 +276,8 @@
   // deliberately an estimate, not a full-chain simulation or an exact aim assist.
   function chooseShot(state, params = P.DEFAULTS) {
     const cats = state.actors.filter(cat => cat.hp > 0 && !cat.removed);
-    const friends = cats.filter(cat => cat.team === state.side && !cat.usedThisRound);
+    const friends = cats.filter(cat => cat.team === state.side
+      && (state.bonusId == null ? !cat.usedThisRound : cat.id === state.bonusId));
     const opponents = cats.filter(cat => cat.team !== state.side);
     if (state.phase !== 'ready' || !friends.length) return null;
     const map = state.map;
@@ -247,48 +293,56 @@
     const lowX = bounds.left + P.RADIUS, highX = bounds.right - P.RADIUS;
     const lowY = bounds.top + P.RADIUS, highY = bounds.bottom - P.RADIUS;
     let best = null;
-    for (const cat of friends) for (const target of opponents) {
-      const images = [[target.x, target.y], [2 * lowX - target.x, target.y],
-        [2 * highX - target.x, target.y], [target.x, 2 * lowY - target.y], [target.x, 2 * highY - target.y]];
-      for (const [x, y] of images) for (const offset of [0, -0.09, 0.09]) for (const power of [0.6, 0.8, 1]) {
-        const angle = Math.atan2(y - cat.y, x - cat.x) + offset;
-        const direction = { x: Math.cos(angle), y: Math.sin(angle) };
-        let hit = P.firstContact(cat, direction, cats, cat.id, map);
-        if (!hit) continue;
-        let distance = hit.distance;
-        let speed = params.maxSpeed * power / Math.sqrt(cat.mass);
-        let wallBonus = 0;
-        if (hit.type === 'wall') {
-          speed = Math.max(0, speed - params.drag * distance) * Math.min(0.99, params.wallBounce + cat.wallBonus);
-          const dot = direction.x * hit.normal.x + direction.y * hit.normal.y;
-          const reflected = { x: direction.x - 2 * dot * hit.normal.x, y: direction.y - 2 * dot * hit.normal.y };
-          const start = { x: hit.x + reflected.x * 0.1, y: hit.y + reflected.y * 0.1 };
-          hit = P.firstContact(start, reflected, cats, cat.id, map);
+    for (const cat of friends) {
+      const heals = ROLES[cat.role].skill === 'heal';
+      const targets = heals ? [...opponents, ...cats.filter(ally => ally.team === cat.team && ally.id !== cat.id && ally.hp < ally.maxHp)] : opponents;
+      for (const target of targets) {
+        const images = [[target.x, target.y], [2 * lowX - target.x, target.y],
+          [2 * highX - target.x, target.y], [target.x, 2 * lowY - target.y], [target.x, 2 * highY - target.y]];
+        for (const [x, y] of images) for (const offset of [0, -0.09, 0.09]) for (const power of [0.6, 0.8, 1]) {
+          const angle = Math.atan2(y - cat.y, x - cat.x) + offset;
+          const direction = { x: Math.cos(angle), y: Math.sin(angle) };
+          let hit = P.firstContact(cat, direction, cats, cat.id, map);
           if (!hit) continue;
-          wallBonus = cat.role === 1 ? 2 : 0;
+          let distance = hit.distance;
+          let speed = params.maxSpeed * power / Math.sqrt(cat.mass);
+          let wallBonus = 0;
+          if (hit.type === 'wall') {
+            speed = Math.max(0, speed - params.drag * distance) * Math.min(0.99, params.wallBounce + cat.wallBonus);
+            const dot = direction.x * hit.normal.x + direction.y * hit.normal.y;
+            const reflected = { x: direction.x - 2 * dot * hit.normal.x, y: direction.y - 2 * dot * hit.normal.y };
+            const start = { x: hit.x + reflected.x * 0.1, y: hit.y + reflected.y * 0.1 };
+            hit = P.firstContact(start, reflected, cats, cat.id, map);
+            if (!hit) continue;
+            wallBonus = cat.role === 1 ? 2 : 0;
+          }
+          speed -= params.drag * hit.distance;
+          let score = -distance * 0.002;
+          // Reach estimate only: this is the simulation's natural stop speed, not a damage threshold.
+          if (hit.type === 'ring' && speed > P.STOP_SPEED) {
+            const victim = cats.reduce((closest, candidate) => {
+              if (candidate.id === cat.id) return closest;
+              const gap = Math.hypot(candidate.x - hit.x, candidate.y - hit.y);
+              return !closest || gap < closest.gap ? { cat: candidate, gap } : closest;
+            }, null)?.cat;
+            if (victim && victim.team !== cat.team) {
+              const damage = cat.attack - (victim.role === 2 ? 8 : 0);
+              const lethal = victim.hp <= damage;
+              const extraShot = lethal && ROLES[cat.role].skill === 'extraShot' && state.bonusId == null;
+              score += damage + (lethal ? 55 : 0) + (extraShot ? 12 : 0) + (1 - victim.hp / victim.maxHp) * 10 + wallBonus;
+            } else if (victim && heals) {
+              score += Math.min(cat.attack, victim.maxHp - victim.hp) * (2 - victim.hp / victim.maxHp);
+            } else score += 2;
+          }
+          // Prefer enough force for follow-up bounces; keep tie-breaking deterministic.
+          score += power * 2;
+          if (!best || score > best.score) best = { id: cat.id,
+            x: direction.x * params.maxSpeed * power, y: direction.y * params.maxSpeed * power, score };
         }
-        speed -= params.drag * hit.distance;
-        let score = -distance * 0.002;
-        // Reach estimate only: this is the simulation's natural stop speed, not a damage threshold.
-        if (hit.type === 'ring' && speed > P.STOP_SPEED) {
-          const victim = cats.reduce((closest, candidate) => {
-            if (candidate.id === cat.id) return closest;
-            const gap = Math.hypot(candidate.x - hit.x, candidate.y - hit.y);
-            return !closest || gap < closest.gap ? { cat: candidate, gap } : closest;
-          }, null)?.cat;
-          if (victim && victim.team !== cat.team) {
-            const damage = cat.attack - (victim.role === 2 ? 8 : 0);
-            score += damage + (victim.hp <= damage ? 55 : 0) + (1 - victim.hp / victim.maxHp) * 10 + wallBonus;
-          } else score += 2;
-        }
-        // Prefer enough force for follow-up bounces; keep tie-breaking deterministic.
-        score += power * 2;
-        if (!best || score > best.score) best = { id: cat.id,
-          x: direction.x * params.maxSpeed * power, y: direction.y * params.maxSpeed * power, score };
       }
     }
     return best;
   }
 
-  return { Match, ROLES, roleOrder, chooseShot, respawnPoint, FLIGHT_DURATION };
+  return { Match, ROLES, roleOrder, chooseShot, respawnPoint, FLIGHT_DURATION, randomRoster };
 });

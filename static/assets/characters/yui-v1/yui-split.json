@@ -1,0 +1,63 @@
+{
+  "character": "yui",
+  "parts": [
+    {
+      "id": "float",
+      "image": "yui-battle-atlas.png",
+      "source": {
+        "x": 566,
+        "y": 1160,
+        "width": 400,
+        "height": 263
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 63
+      },
+      "drawBox": {
+        "x": -40,
+        "y": -26,
+        "width": 80,
+        "height": 53
+      },
+      "flight": {
+        "delay": 0.055,
+        "departure": 0.94,
+        "drift": 0.22,
+        "turn": -1.7,
+        "growth": 0.24,
+        "squeezeX": 0.36,
+        "squeezeY": 0.16
+      }
+    },
+    {
+      "id": "character",
+      "image": "yui-battle-atlas.png",
+      "source": {
+        "x": 576,
+        "y": 9,
+        "width": 386,
+        "height": 481
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 120
+      },
+      "drawBox": {
+        "x": -45.08,
+        "y": -80.9,
+        "width": 88.78,
+        "height": 110.63
+      },
+      "flight": {
+        "delay": 0,
+        "departure": 0.78,
+        "drift": 0.29,
+        "turn": 0.85,
+        "growth": 0.5,
+        "squeezeX": 0.12,
+        "squeezeY": 0.24
+      }
+    }
+  ]
+}

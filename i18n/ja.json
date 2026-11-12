@@ -132,6 +132,8 @@
   "skin.soundOn": "音声",
   "skin.soundOff": "消音",
   "hud.aiming": "離して発射",
+  "hud.canceling": "離してキャンセル",
+  "ui.cancelLaunch": "ここにドラッグして発射を中止",
   "opponent.name": "林悠怡",
   "ui.launchHint": "ネコを引いて、離して発射",
   "test.oneHit": "テスト：一撃で退場",

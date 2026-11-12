@@ -86,6 +86,16 @@ async def test_host_serves_game_assets_and_shared_locale_bundles(monkeypatch, ja
             ("/assets/characters/unseat-v1/poses.png", "image/png"),
             ("/sound.js", javascript_mime),
             ("/art.js", javascript_mime),
+            ("/assets/characters/roster-preview/player.js", javascript_mime),
+            *[(f"/assets/characters/roster-preview/{sheet}.png", "image/png")
+              for sheet in ["juzi-entrance-key-poses", "pudding-entrance-key-poses", "milkcap-key-poses",
+                            "milkcap-rub-key-poses", "milkcap-lowering-key-poses"]],
+            *[(f"/assets/characters/yui-v1/{key}{suffix}", mime)
+              for key in ["yui", "yui-lolita"]
+              for suffix, mime in [(".json", "application/json"), ("-opening.json", "application/json"),
+                                   ("-unseat.json", "application/json"), ("-split.json", "application/json"),
+                                   ("-pool.png", "image/png"), ("-battle-atlas.png", "image/png"),
+                                   ("-standing.png", "image/png")]],
             ("/assets/juzi.json", "application/json"),
             ("/assets/juzi-expressions.png", "image/png"),
             ("/assets/pudding.json", "application/json"),

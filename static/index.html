@@ -17,7 +17,7 @@
   </script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="skin.css?v=entry-finish-1">
-  <link rel="stylesheet" href="layout.css?v=contact-1">
+  <link rel="stylesheet" href="layout.css?v=aim-cancel-1">
   <link rel="stylesheet" href="versus.css?v=4">
   <link rel="stylesheet" href="result.css?v=round-score-1">
   <script defer src="vendor/matter-0.20.0.min.js"></script>
@@ -40,11 +40,11 @@
   <script defer src="impact-contact-renderer.js?v=impact-read-1"></script>
   <script defer src="impact-beat.js?v=unseat-pace-1"></script>
   <script defer src="knockout-camera.js?v=impact-read-1"></script>
-  <script defer src="battle.js?v=early-round-1"></script>
-  <script defer src="art.js?v=trio-default-1"></script>
+  <script defer src="battle.js?v=yui-roster-1"></script>
+  <script defer src="art.js?v=yui-roster-1"></script>
   <script defer src="sound.js"></script>
   <script defer src="i18n.js"></script>
-  <script defer src="game.js?v=player-traits-1"></script>
+  <script defer src="game.js?v=aim-cancel-1"></script>
 </head>
 <body>
   <main class="app">
@@ -74,6 +74,9 @@
         <div class="stage-slot">
           <div class="canvas-wrap">
             <canvas id="pool" width="960" height="600" tabindex="0" data-aria="ui.canvas"></canvas>
+            <div id="aim-cancel-target" class="aim-cancel-target" hidden aria-hidden="true">
+              <span>×</span><strong data-t="ui.cancelLaunch"></strong>
+            </div>
             <div id="round-score" class="round-score" hidden>
               <div class="round-score-title"><span id="round-score-number"></span><span data-t="battle.totalKnockouts"></span></div>
               <div class="round-score-line">

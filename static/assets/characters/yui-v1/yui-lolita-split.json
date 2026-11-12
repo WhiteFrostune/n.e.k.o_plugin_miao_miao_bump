@@ -1,0 +1,63 @@
+{
+  "character": "yui-lolita",
+  "parts": [
+    {
+      "id": "float",
+      "image": "yui-lolita-battle-atlas.png",
+      "source": {
+        "x": 561,
+        "y": 1160,
+        "width": 416,
+        "height": 259
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 60
+      },
+      "drawBox": {
+        "x": -40,
+        "y": -26,
+        "width": 80,
+        "height": 50
+      },
+      "flight": {
+        "delay": 0.055,
+        "departure": 0.94,
+        "drift": 0.22,
+        "turn": -1.7,
+        "growth": 0.24,
+        "squeezeX": 0.36,
+        "squeezeY": 0.16
+      }
+    },
+    {
+      "id": "character",
+      "image": "yui-lolita-battle-atlas.png",
+      "source": {
+        "x": 567,
+        "y": 17,
+        "width": 411,
+        "height": 490
+      },
+      "pixelGrid": {
+        "width": 96,
+        "height": 114
+      },
+      "drawBox": {
+        "x": -50.88,
+        "y": -84.28,
+        "width": 98.64,
+        "height": 117.6
+      },
+      "flight": {
+        "delay": 0,
+        "departure": 0.78,
+        "drift": 0.29,
+        "turn": 0.85,
+        "growth": 0.5,
+        "squeezeX": 0.12,
+        "squeezeY": 0.24
+      }
+    }
+  ]
+}

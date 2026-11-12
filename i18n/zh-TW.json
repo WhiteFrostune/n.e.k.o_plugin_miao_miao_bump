@@ -132,6 +132,8 @@
   "skin.soundOn": "聲音",
   "skin.soundOff": "靜音",
   "hud.aiming": "放開發射",
+  "hud.canceling": "放開取消",
+  "ui.cancelLaunch": "拖到這裡取消發射",
   "opponent.name": "林悠怡",
   "ui.launchHint": "拖曳貓貓，放開發射",
   "test.oneHit": "測試：一擊淘汰",

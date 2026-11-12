@@ -25,7 +25,7 @@
   const development = Boolean(document.getElementById('motion-mode'));
   const savePreviewChoices = development && !fullPlaytest;
   const previewParams = development ? lineupParams : new URLSearchParams();
-  const traitDuration = { guard: 0.48, bounce: 0.32, heavy: 0.32 };
+  const traitDuration = { guard: 0.48, bounce: 0.32, heavy: 0.32, heal: 0.56 };
   // Development pages keep their explicit presentation profiles.
   const knockoutPreview = ['knockout', 'costume', 'camera', 'contact', 'flight', 'feedback', 'pace', 'camera-rate', 'chain']
     .some(key => previewParams.has(key));
@@ -35,6 +35,7 @@
   const S = window.MiaoSound;
   const $ = id => document.getElementById(id);
   const canvas = $('pool');
+  const cancelTarget = $('aim-cancel-target');
   const ctx = canvas.getContext('2d');
   const poolContext = ctx;
   const flightCanvas = $('knockout-layer');
@@ -44,6 +45,8 @@
     { main: '#eea449', dark: '#b8793e', light: '#fff0ca' },
     { main: '#edca60', dark: '#a88642', light: '#fff6cf' },
     { main: '#b6a5dc', dark: '#8d7caf', light: '#f1ebff' },
+    { main: '#52c4e5', dark: '#28769d', light: '#e6faff' },
+    { main: '#aab0db', dark: '#666693', light: '#fff1dd' },
   ];
   let world;
   let match = null;
@@ -137,6 +140,7 @@
   function actorStatus(cat) {
     if (cat.removed || cat.hp <= 0) return 'waiting';
     if (landings.has(cat.id)) return 'entering';
+    if (match.phase === 'ready' && cat.id === match.bonusId) return 'available';
     return cat.usedThisRound ? 'acted' : 'available';
   }
 
@@ -150,7 +154,7 @@
     $('scoreboard').setAttribute('aria-label', I.t(match ? 'hud.scoreboard' : 'mode.practice'));
     for (const id of ['ally-panel', 'enemy-panel', 'round-status', 'target-status', 'first-status', 'team-status', 'score-status']) $(id).hidden = !match;
     if (!match) { rosterStamp = ''; return; }
-    const stamp = [I.locale, match.round, match.side, match.phase, selected, suspended,
+    const stamp = [I.locale, match.round, match.side, match.phase, match.bonusId, selected, suspended,
       ...match.scores, match.targetScore, ...match.actors.flatMap(cat => [cat.hp, cat.usedThisRound, cat.removed]),
       ...landings.keys()].join('|');
     if (stamp === rosterStamp) return;
@@ -173,21 +177,21 @@
       const status = actorStatus(cat);
       const stateLabel = actorStatusLabel(cat);
       const character = I.t(`character.${cat.role}`);
+      const shortName = B.ROLES[cat.role].shortName;
       const description = `${I.t(cat.team === 0 ? 'battle.ally' : 'battle.enemy')} · ${character} · ${stateLabel} · ${I.t('battle.hp')} ${cat.hp}/${cat.maxHp}`;
       button.dataset.status = status;
       button.dataset.selected = selected === cat.id;
       button.setAttribute('aria-pressed', selected === cat.id);
       button.setAttribute('aria-label', description); button.title = description;
       button.disabled = cat.team !== 0 || suspended || !match.canLaunch(cat.id);
-      button.querySelector('.portrait-label').textContent = waiting ? I.t('battle.defeated') : character;
+      button.querySelector('.portrait-label').textContent = waiting ? I.t('battle.defeated') : shortName ? I.t(shortName) : character;
       button.querySelector('.portrait-fallback').textContent = character;
       const mark = button.querySelector('.portrait-mark');
       mark.hidden = status === 'available'; mark.textContent = waiting ? '×' : status === 'entering' ? '…' : '✓';
     });
   }
 
-  function toWorld(event) {
-    const rect = canvas.getBoundingClientRect();
+  function toWorld(event, rect = canvas.getBoundingClientRect()) {
     return C.unproject({ x: (event.clientX - rect.left) * WIDTH / rect.width,
       y: (event.clientY - rect.top) * HEIGHT / rect.height },cameraProjection());
   }
@@ -285,9 +289,12 @@
 
   function cancelAim() {
     const previous = drag;
+    if (!previous) return;
     drag = null;
-    if (previous && canvas.hasPointerCapture(previous.pointerId)) canvas.releasePointerCapture(previous.pointerId);
+    if (canvas.hasPointerCapture(previous.pointerId)) canvas.releasePointerCapture(previous.pointerId);
     canvas.classList.remove('aiming');
+    cancelTarget.hidden = true;
+    delete cancelTarget.dataset.active;
   }
 
   function beginEntrance(cat, delay = 0) {
@@ -413,19 +420,40 @@
     S.unlock();
     event.preventDefault();
     selected = ring.id;
-    drag = { start: point, end: point, pointerId: event.pointerId };
+    drag = { start: point, x: event.clientX, y: event.clientY,
+      cancelRadius: event.pointerType === 'touch' ? 24 : 14, pointerId: event.pointerId, vector: null };
     canvas.setPointerCapture(event.pointerId);
     canvas.focus({ preventScroll: true });
     canvas.classList.add('aiming');
+    cancelTarget.hidden = false;
     syncControls();
+  }
+
+  function updateAim(event) {
+    const { clientX: x, clientY: y } = event;
+    const rect = canvas.getBoundingClientRect();
+    const target = cancelTarget.getBoundingClientRect();
+    // Pointer capture keeps delivering events to the canvas, even over the drop target.
+    const overCancel = x >= target.left && x <= target.right && y >= target.top && y <= target.bottom;
+    const outside = x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom;
+    const nearStart = Math.hypot(x - drag.x, y - drag.y) <= drag.cancelRadius;
+    const vector = overCancel || outside || nearStart ? null
+      : P.launchVector(drag.start, toWorld(event, rect), world.params.maxSpeed);
+    if ((cancelTarget.dataset.active === 'true') !== overCancel) cancelTarget.dataset.active = String(overCancel);
+    drag.vector = vector?.power ? vector : null;
   }
 
   function pointerUp(event) {
     if (!drag || event.pointerId !== drag.pointerId) return;
-    const vector = P.launchVector(drag.start, toWorld(event), world.params.maxSpeed);
+    updateAim(event);
+    const { vector } = drag;
     cancelAim();
-    if (vector.power > 0) launchShot(selected, vector);
+    if (vector) launchShot(selected, vector);
     syncControls();
+  }
+
+  function cancelPointerAim(event) {
+    if (event.pointerId === drag?.pointerId) cancelAim();
   }
 
   function launchShot(id, vector) {
@@ -477,7 +505,6 @@
     $('layout').disabled = Boolean(match);
     $('reset-label').textContent = I.t(match ? 'skin.restart' : 'ui.reset');
     $('play-hint').textContent = I.t(match ? 'battle.hint' : 'ui.hint');
-    $('launch-hint-copy').textContent = I.t(match && testOneHit ? 'test.oneHitActive' : 'ui.launchHint');
     $('sound-label').textContent = I.t(S.enabled ? 'skin.soundOn' : 'skin.soundOff');
     $('sound-icon').src = `assets/ui/icons/fa-solid/${S.enabled ? 'volume-high' : 'volume-xmark'}.svg`;
     $('sound-toggle').setAttribute('aria-pressed', S.enabled);
@@ -589,8 +616,18 @@
         : match.phase === 'resolving' ? 'resolving' : world.moving ? (match.side === 0 ? 'playerMoving' : 'enemyMoving')
           : landings.size ? 'entering' : match.side === 0 ? 'playerTurn' : 'enemyTurn';
     }
-    const status = state === 'aiming' && match ? I.t('hud.aiming') : I.t(`${match && ['playerTurn', 'enemyTurn', 'playerMoving', 'enemyMoving'].includes(state) ? 'hud' : 'state'}.${state}`);
+    const bonusReady = match?.phase === 'ready' && match.bonusId !== null && ['playerTurn', 'enemyTurn'].includes(state);
+    const status = bonusReady ? I.t('hud.extraShot').replace('{cat}', I.t(`character.${match.actors[match.bonusId].role}`))
+      : state === 'aiming' ? I.t(drag.vector ? 'hud.aiming' : 'hud.canceling')
+      : I.t(`${match && ['playerTurn', 'enemyTurn', 'playerMoving', 'enemyMoving'].includes(state) ? 'hud' : 'state'}.${state}`);
     if ($('state').textContent !== status) $('state').textContent = status;
+    const leavingBonus = match?.phase === 'ready' && match.side === 0
+      && match.bonusId !== null && match.bonusId !== selected;
+    const launchHint = I.t(state === 'aiming' && !drag.vector ? 'hud.canceling'
+      : leavingBonus ? 'hud.skipExtraOnLaunch' : state === 'aiming' ? 'ui.cancelHint'
+      : match && testOneHit ? 'test.oneHitActive' : 'ui.launchHint');
+    const hint = $('launch-hint-copy');
+    if (hint.textContent !== launchHint) hint.textContent = launchHint;
     $('state').dataset.state = world.moving ? 'moving' : 'idle';
     if (development) $('tuning-fields').disabled = world.moving || Boolean(match);
     canvas.classList.toggle('moving', world.moving);
@@ -648,7 +685,7 @@
     ctx.save();
     ctx.translate(Math.round(pose.body.x), Math.round(pose.body.y));
     ctx.rotate(pose.body.angle);
-    if (pose.pose === 'jump') ctx.scale(pose.direction, 1);
+    if (pose.pose === 'jump') ctx.scale(pose.direction * opening.jumpDirection, 1);
     opening.draw(ctx, pose.pose);
     ctx.restore();
   }
@@ -718,7 +755,7 @@
     }
     ctx.restore();
     if (ghost) { ctx.restore(); return; }
-    const name = `${cat ? (cat.team === 0 ? '◆ ' : '● ') : ''}${I.t(`character.${role}`)}${cat?.usedThisRound && cat.hp > 0 ? ' ✓' : ''}`;
+    const name = `${cat ? (cat.team === 0 ? '◆ ' : '● ') : ''}${I.t(`character.${role}`)}${cat?.usedThisRound && actorStatus(cat) === 'acted' ? ' ✓' : ''}`;
     const nameY = art[role]?.metadata.hud?.nameY ?? P.RADIUS + 9;
     ctx.font = '600 13px "Segoe UI", "Microsoft YaHei", sans-serif';
     const width = ctx.measureText(name).width + 20;
@@ -742,9 +779,8 @@
   }
 
   function drawAim(rings) {
-    if (!drag) return;
-    const vector = P.launchVector(drag.start, drag.end, world.params.maxSpeed);
-    if (!vector.power) return;
+    const vector = drag?.vector;
+    if (!vector) return;
     const origin = rings.find(ring => ring.id === selected);
     const contact = P.firstContact(origin, vector, rings, selected, map);
     if (!contact) return;
@@ -839,6 +875,16 @@
           ctx.fillStyle = '#c9c3ff66';
           ctx.fill();
           ctx.strokeStyle = '#7774ce';
+        } else if (effect.kind === 'heal') {
+          const spread = reducedMotion ? 0 : progress;
+          ctx.ellipse(0, 9, 46 + spread * 11, 21 + spread * 5, 0, 0, Math.PI);
+          for (const side of [-1, 1]) {
+            const x = side * (42 + spread * 9);
+            const y = 4 - spread * 19;
+            ctx.moveTo(x - 4, y); ctx.lineTo(x + 4, y);
+            ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4);
+          }
+          ctx.strokeStyle = '#218467';
         } else {
           ctx.ellipse(0, 10, 45 + progress * 17, 17 + progress * 5, 0, 0, Math.PI);
           ctx.strokeStyle = '#c17b36';
@@ -1117,6 +1163,12 @@
           effects.push({ x: event.x, y: event.y, speed: 1200, normal: event.direction, age: 0 });
           S.play('retreat');
           combatChanged = true;
+        } else if (event.type === 'heal') {
+          startTrait(event.id, 'heal');
+          combatChanged = true;
+        } else if (event.type === 'extraShot') {
+          selected = event.id;
+          combatChanged = true;
         } else if (event.type === 'respawn') {
           const cat = match.actors.find(item => item.id === event.id);
           if (!beginEntrance(cat)) {
@@ -1259,7 +1311,7 @@
     $('map-note').hidden = !mapChoice.fallback;
     floatImages = characterKeys.map((_, role) => A.floatImage(paletteFor(role)));
     const loaded = await Promise.allSettled([
-      ...characterKeys.map(key => A.load(key, characterArtSet, knockoutArtSet)),
+      ...B.ROLES.map(({ key, artMetadata }) => A.load(key, characterArtSet, knockoutArtSet, artMetadata)),
       A.loadPool(map, { classicWater: previewParams.get('water') === 'classic',
         dynamicWater: previewParams.get('water-motion') !== 'static' }), A.loadUiSurfaces(),
     ]);
@@ -1277,10 +1329,10 @@
     listen(window, 'resize', resize);
     listen(window, 'scroll', resize, { passive: true });
     listen(canvas, 'pointerdown', pointerDown);
-    listen(canvas, 'pointermove', event => { if (drag && event.pointerId === drag.pointerId) drag.end = toWorld(event); });
+    listen(canvas, 'pointermove', event => { if (event.pointerId === drag?.pointerId) updateAim(event); });
     listen(canvas, 'pointerup', pointerUp);
-    listen(canvas, 'pointercancel', cancelAim);
-    listen(canvas, 'lostpointercapture', cancelAim);
+    listen(canvas, 'pointercancel', cancelPointerAim);
+    listen(canvas, 'lostpointercapture', cancelPointerAim);
     listen(canvas, 'contextmenu', event => { event.preventDefault(); cancelAim(); });
     listen(window, 'keydown', event => { if (event.key === 'Escape') cancelAim(); });
     listen(window, 'blur', cancelAim);

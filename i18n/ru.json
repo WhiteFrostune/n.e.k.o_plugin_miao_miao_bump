@@ -132,6 +132,8 @@
   "skin.soundOn": "Звук",
   "skin.soundOff": "Без звука",
   "hud.aiming": "Отпустите",
+  "hud.canceling": "Отпустите для отмены",
+  "ui.cancelLaunch": "Перетащите сюда для отмены",
   "opponent.name": "林悠怡",
   "ui.launchHint": "Потяните и отпустите",
   "test.oneHit": "Тест: выбывание с одного удара",

@@ -132,6 +132,8 @@
   "skin.soundOn": "Som",
   "skin.soundOff": "Mudo",
   "hud.aiming": "Solte e lance",
+  "hud.canceling": "Solte para cancelar",
+  "ui.cancelLaunch": "Arraste aqui para cancelar",
   "opponent.name": "林悠怡",
   "ui.launchHint": "Arraste e solte para lançar",
   "test.oneHit": "Teste: eliminação com um golpe",

@@ -44,7 +44,8 @@
     return image;
   }
 
-  async function load(character = 'juzi', artSet = 'concept-v2', knockoutSet = 'classic') {
+  async function load(character = 'juzi', artSet = 'concept-v2', knockoutSet = 'classic', artMetadata) {
+    if (artMetadata) return loadCharacter(character, 'concept-v2', knockoutSet, artMetadata);
     const selected = artSet === 'classic' ? 'classic' : 'concept-v2';
     try {
       return await loadCharacter(character, selected, knockoutSet);
@@ -56,9 +57,9 @@
     }
   }
 
-  async function loadCharacter(character, artSet, knockoutSet = 'classic') {
+  async function loadCharacter(character, artSet, knockoutSet = 'classic', artMetadata) {
     const directory = artSet === 'classic' ? 'assets' : 'assets/characters/concept-v2';
-    const metadataUrl = new URL(`${directory}/${character}.json`, document.baseURI);
+    const metadataUrl = new URL(artMetadata || `${directory}/${character}.json`, document.baseURI);
     const response = await fetch(metadataUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error('Character metadata unavailable');
     const metadata = await response.json();
@@ -111,7 +112,8 @@
     }
     let opening = null;
     if (metadata.opening) {
-      try { opening = await loadOpening(new URL(metadata.opening, metadataUrl)); }
+      const seated = { sprite: frames[0], box: [box.x, box.y, box.width, box.height] };
+      try { opening = await loadOpening(new URL(metadata.opening, metadataUrl), seated); }
       catch { /* Missing opening art skips the entrance without blocking play. */ }
     }
     return {
@@ -153,7 +155,7 @@
     };
   }
 
-  async function loadOpening(metadataUrl) {
+  async function loadOpening(metadataUrl, seated) {
     const response = await fetch(metadataUrl, { cache: 'no-cache' });
     if (!response.ok) throw new Error('Opening pose metadata unavailable');
     const metadata = await response.json();
@@ -162,6 +164,10 @@
     await image.decode();
     const frames = {};
     for (const id of ['ring', 'jump', 'catch']) {
+      if (id === 'catch' && !metadata.frames.catch) {
+        frames.catch = seated;
+        continue;
+      }
       const { source, box, outline } = metadata.frames[id];
       const [x, y, width, height] = source;
       const sprite = document.createElement('canvas');
@@ -182,7 +188,7 @@
       target.putImageData(pixels, 0, 0);
       frames[id] = { sprite, box };
     }
-    return { draw(context, id) {
+    return { jumpDirection: metadata.jumpDirection === -1 ? -1 : 1, draw(context, id) {
       const { sprite, box } = frames[id];
       context.imageSmoothingEnabled = false;
       context.drawImage(sprite, ...box);

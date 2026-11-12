@@ -68,7 +68,7 @@ def play_match(page, check_pause=False):
     assert battle["winner"] in (0, 1) and battle["scores"][battle["winner"]] >= 5
     assert not state["flights"]
     page.locator("#result-title").wait_for(state="visible")
-    assert f"{battle['scores'][0]} : {battle['scores'][1]}" in page.locator("#result-note").inner_text()
+    assert f"{battle['scores'][0]} : {battle['scores'][1]}" in page.locator("#result-note").text_content()
     assert page.locator("#result-lineup li").all_text_contents() == LINEUP
     print(f"Match finished at {battle['scores']}, round {battle['round']}, {actions} player shots.", flush=True)
 
@@ -109,7 +109,7 @@ def run(url, channel, full_playtest=False):
                     for (const trait of state?.traits ?? []) traits.add(trait.kind);
                 });
             })();""")
-            page.goto(url + "/preparation.html?locale=zh-CN")
+            page.goto(url + "/preparation.html?locale=zh-CN&rival=juzi,pudding,milkcap")
             assert page.locator(".preview-links").count() == 0
             page.locator("#ally-lineup button").first.click()
             for key in ["milkcap", "juzi", "pudding"]:
@@ -149,7 +149,8 @@ def run(url, channel, full_playtest=False):
             assert state["motion"]["systemReduced"]
             assert state["motion"]["preference"] == "full" and not state["motion"]["reduced"]
             assert state["waterSurface"]["mode"] == "dynamic"
-            assert all(cat["unseat"] and cat["knockoutSet"] == "swim-v2" for cat in state["art"]["characters"])
+            assert all(cat["unseat"] for cat in state["art"]["characters"])
+            assert all(cat["knockoutSet"] == "swim-v2" for cat in state["art"]["characters"][:3])
             for width, height in [(1366, 768), (1024, 600)]:
                 page.set_viewport_size({"width": width, "height": height})
                 assert_viewport_fit(page)

@@ -51,8 +51,23 @@ button:focus-visible, a:focus-visible { outline: 3px solid #163b77; outline-offs
   line-height: 1.2;
 }
 .team-label img, .start-match img { width: 1em; height: 1em; filter: brightness(0) invert(1); }
+.rival-header { display: grid; justify-items: end; justify-self: end; gap: 6px; }
 .rival-label { justify-self: end; background: #ae365d; }
 .rival-label small { display: block; margin-top: 3px; font-size: .62em; font-weight: 650; }
+.reroll-rival {
+  min-height: 36px;
+  padding: 5px clamp(8px, 1vw, 14px);
+  border: 2px solid #b94369;
+  border-radius: 999px;
+  background: #fff3f7;
+  color: #842c4d;
+  box-shadow: 0 2px 0 #143e6638;
+  font-size: clamp(12px, 1.2vw, 16px);
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.reroll-rival:not(:disabled):hover { background: #ffdfeb; }
 .map-label { display: grid; gap: 1px; text-align: center; padding: 5px clamp(8px, 1.8vw, 19px); border-radius: 12px; background: #fff8e9; }
 .map-label span { color: #486180; font-size: clamp(10px, 1.1vw, 13px); }
 .map-label strong { font-size: clamp(13px, 1.65vw, 20px); }

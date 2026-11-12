@@ -16,17 +16,28 @@
     skill: t(`skill.${index}.name`),
     brief: t(`skill.${index}.brief`),
     artKey: role.key,
+    artMetadata: role.artMetadata,
+    portrait: role.portrait,
     preview: { artKey: role.key, frame: 0 },
   }]));
   const readRoster = side => MiaoBattle.roleOrder(params.get(side)?.split(',')).map(role => MiaoBattle.ROLES[role].key);
-  const rivalRoster = readRoster('rival');
+  let rivalRoster = params.has('rival') ? readRoster('rival') : MiaoBattle.randomRoster();
+  if (!params.has('rival')) {
+    // A refresh of this lobby keeps the opponents already shown to the player.
+    const lobby = new URL(location.href);
+    lobby.searchParams.set('rival', rivalRoster.join(','));
+    history.replaceState(history.state, '', lobby);
+  }
   let roster = params.has('ally') ? readRoster('ally') : [null, null, null];
   const ally = element('ally-lineup');
+  const rival = element('rival-lineup');
+  const reroll = element('reroll-rival');
   const hint = element('lobby-hint');
   const start = element('start-match');
   const picker = element('roster-picker');
   const confirm = element('picker-confirm');
   const preview = element('roster-preview');
+  const previewMotion = window.MiaoRosterPreview?.create(preview);
   const assets = new Map();
   const choices = new Map();
   let draft;
@@ -35,7 +46,7 @@
   let previewRequest = 0;
 
   function loadArt(key) {
-    if (!assets.has(key)) assets.set(key, MiaoArt.load(key).catch(() => null));
+    if (!assets.has(key)) assets.set(key, MiaoArt.load(key, undefined, undefined, cats.get(key)?.artMetadata).catch(() => null));
     return assets.get(key);
   }
 
@@ -55,12 +66,25 @@
     }
   }
 
-  // The preview stage is independent of roster changes. Future previews can
-  // replace this renderer while continuing to use the same character records.
-  async function showPreview(cat) {
+  async function showPreview(cat, requested) {
     const request = ++previewRequest;
     const context = preview.getContext('2d');
+    previewMotion?.stop();
     context.clearRect(0, 0, preview.width, preview.height);
+    if (previewMotion && await previewMotion.play(cat.id, requested)) return;
+    if (request !== previewRequest) return;
+    if (cat.portrait) {
+      const portrait = new Image();
+      portrait.src = new URL(cat.portrait, document.baseURI).href;
+      try {
+        await portrait.decode();
+        if (request !== previewRequest) return;
+        const scale = Math.min(184 / portrait.height, 260 / portrait.width);
+        const width = portrait.width * scale, height = portrait.height * scale;
+        context.drawImage(portrait, (preview.width - width) / 2, 192 - height, width, height);
+        return;
+      } catch { /* Use the match sprite if the standalone portrait fails to load. */ }
+    }
     const art = await loadArt(cat.preview.artKey);
     if (!art || request !== previewRequest) return;
     const box = art.metadata.drawBox;
@@ -85,8 +109,9 @@
       slot.addEventListener('click', () => {
         openerSlot = index;
         draft = roster.filter(Boolean);
-        selectCat(cat?.id ?? cats.keys().next().value);
         picker.showModal();
+        viewedCat = null;
+        selectCat(cat?.id ?? 'juzi', { requested: !cat });
         choices.get(viewedCat).button.focus();
       });
     }
@@ -103,6 +128,10 @@
     }
     start.disabled = count !== roster.length;
     hint.textContent = start.disabled ? '点击带「＋」的泳圈，选择出战猫猫' : '三只猫猫已就位';
+  }
+
+  function renderRivals() {
+    rival.replaceChildren(...rivalRoster.map((id, index) => createSlot(index, cats.get(id), false)));
   }
 
   for (const cat of cats.values()) {
@@ -133,14 +162,15 @@
       const seat = draft.indexOf(cat.id);
       if (seat >= 0) draft.splice(seat, 1);
       else if (draft.length < roster.length) draft.push(cat.id);
-      selectCat(cat.id);
+      selectCat(cat.id, { requested: true });
     });
     loadArt(cat.artKey).then(art => art?.drawPortrait(portrait.getContext('2d')));
     choices.set(cat.id, { button, assignment });
     element('picker-cats').append(button);
   }
 
-  function selectCat(id) {
+  function selectCat(id, { requested = false } = {}) {
+    const changed = viewedCat !== id;
     viewedCat = id;
     const cat = cats.get(id);
     for (const [catId, { button, assignment }] of choices) {
@@ -158,7 +188,7 @@
     element('picker-attack').textContent = cat.attack;
     element('picker-skill').textContent = cat.skill;
     element('picker-brief').textContent = cat.brief;
-    showPreview(cat);
+    if (changed || (requested && previewMotion)) showPreview(cat, requested);
 
     confirm.disabled = draft.length !== roster.length;
     element('picker-count').textContent = `已上阵 ${draft.length}/${roster.length}`;
@@ -173,17 +203,31 @@
   picker.addEventListener('close', () => {
     if (picker.open) return;
     previewRequest++;
+    previewMotion?.stop();
     ally.children[openerSlot]?.focus();
+  });
+  function saveLobby() {
+    const lobby = new URL(location.href);
+    lobby.searchParams.set('map', currentMap().id);
+    if (roster.every(id => cats.has(id))) lobby.searchParams.set('ally', roster.join(','));
+    lobby.searchParams.set('rival', rivalRoster.join(','));
+    // Browser Back can reload the lobby without restoring its in-memory state.
+    history.replaceState(history.state, '', lobby);
+    return lobby;
+  }
+  reroll.addEventListener('click', () => {
+    let next;
+    do {
+      next = MiaoBattle.randomRoster();
+    } while (next.every(id => rivalRoster.includes(id)));
+    rivalRoster = next;
+    saveLobby();
+    renderRivals();
   });
   start.addEventListener('click', () => {
     if (roster.some(id => !cats.has(id))) return;
     start.disabled = true;
-    const lobby = new URL(location.href);
-    lobby.searchParams.set('map', currentMap().id);
-    lobby.searchParams.set('ally', roster.join(','));
-    lobby.searchParams.set('rival', rivalRoster.join(','));
-    // Browser Back can reload the lobby without restoring its in-memory state.
-    history.replaceState(history.state, '', lobby);
+    const lobby = saveLobby();
     const destination = new URL('index.html', lobby);
     for (const key of ['map', 'ally', 'rival']) destination.searchParams.set(key, lobby.searchParams.get(key));
     destination.searchParams.set('locale', MiaoI18n.locale);
@@ -194,7 +238,8 @@
   window.addEventListener('pageshow', event => {
     if (event.persisted) start.disabled = roster.some(id => !cats.has(id));
   });
-  element('rival-lineup').replaceChildren(...rivalRoster.map((id, index) => createSlot(index, cats.get(id), false)));
+  renderRivals();
+  reroll.disabled = cats.size <= rivalRoster.length;
   renderLobby();
 })().catch(() => {
   document.getElementById('lobby-hint').textContent = '角色资料加载失败，请刷新页面重试';

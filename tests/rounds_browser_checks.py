@@ -38,10 +38,10 @@ def run(url):
             source = (ROOT / "static/battle.js").read_text(encoding="utf-8")
             # Keep real Match and pointer input, but use harmless CPU shots to
             # inspect a whole round without depending on combat balance.
-            source = source.replace("return { Match, ROLES, chooseShot, respawnPoint, FLIGHT_DURATION };", """return { Match, ROLES, chooseShot: state => {
+            source = source.replace("roleOrder, chooseShot, respawnPoint", """roleOrder, chooseShot: state => {
                 const cat = state.actors.find(c => c.team === state.side && c.hp > 0 && !c.removed && !c.usedThisRound);
                 return cat ? {id: cat.id, x: -80, y: 0} : null;
-            } };""")
+            }, respawnPoint""")
             context.route("**/battle.js*", lambda route: route.fulfill(body=source, content_type="text/javascript"))
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))

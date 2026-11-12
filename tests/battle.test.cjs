@@ -10,6 +10,126 @@ function settle(match, fps = 60) {
 }
 const hit = (a, b, speed = 500) => ({ ringIds: [a, b], speed, wall: false });
 
+const yuiRoster = ['yui', 'yui-lolita', 'juzi'];
+
+test('random opponent rosters draw three distinct cats, including either or both Yui variants', () => {
+  const rosters = new Set();
+  for (let a = 0; a < 5; a += 1) {
+    for (let b = 0; b < 4; b += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        const draws = [(a + 0.5) / 5, (b + 0.5) / 4, (c + 0.5) / 3];
+        const roster = B.randomRoster(() => draws.shift());
+        assert.equal(new Set(roster).size, 3);
+        assert.ok(roster.every(key => B.ROLES.some(role => role.key === key)));
+        rosters.add(roster.join(','));
+      }
+    }
+  }
+  assert.equal(rosters.size, 60);
+  assert.ok(rosters.has('yui,yui-lolita,juzi'));
+});
+
+test('both Yui variants can share a lineup while matches without a roster keep the original trio', () => {
+  const regular = new B.Match();
+  const match = new B.Match({ allyRoster: yuiRoster, rivalRoster: [...yuiRoster].reverse() });
+  assert.deepEqual(regular.actors.map(cat => cat.role), [0, 1, 2, 0, 1, 2]);
+  assert.deepEqual(match.actors.map(cat => cat.role), [3, 4, 0, 0, 4, 3]);
+  assert.deepEqual(match.world.snapshot().slice(0, 3).map(({ x, y }) => ({ x, y })), match.map.spawns[0]);
+  regular.destroy();
+  match.destroy();
+});
+
+test('Yui can follow up an allied knockout once after settling, on either side', () => {
+  for (const side of [0, 1]) {
+    const match = new B.Match({ allyRoster: yuiRoster, rivalRoster: yuiRoster });
+    match.side = side;
+    const yui = side * 3, ally = yui + 2, enemy = (1 - side) * 3;
+    match.actors[enemy].hp = match.actors[enemy + 1].hp = 1;
+    assert.ok(match.launch(yui, { x: 20, y: 0 }));
+    match.handleContact(hit(ally, enemy));
+    assert.equal(match.canLaunch(yui), false);
+    settle(match);
+    assert.equal(match.side, side);
+    assert.equal(match.round, 1);
+    assert.equal(match.bonusId, yui);
+    assert.equal(match.canLaunch(ally), true);
+    assert.equal(B.chooseShot(match.snapshot()).id, yui);
+    assert.ok(match.launch(yui, { x: 20, y: 0 }));
+    match.handleContact(hit(yui, enemy + 1));
+    settle(match);
+    assert.equal(match.bonusId, null);
+    assert.equal(match.side, 1 - side);
+    assert.equal(match.canLaunch(yui), false);
+    assert.equal(match.drainEvents().filter(event => event.type === 'extraShot').length, 1);
+    match.destroy();
+  }
+});
+
+test('another cat can aim during Yui’s follow-up and forfeits it only on a valid launch', () => {
+  const match = new B.Match({ allyRoster: yuiRoster });
+  match.actors[3].hp = 1;
+  assert.ok(match.launch(0, { x: 20, y: 0 }));
+  match.handleContact(hit(0, 3));
+  settle(match);
+
+  assert.equal(match.bonusId, 0);
+  assert.ok(match.canLaunch(0) && match.canLaunch(1));
+  assert.equal(match.launch(1, { x: 1, y: 0 }), false);
+  assert.equal(match.bonusId, 0);
+  assert.equal(match.actors[1].usedThisRound, false);
+
+  assert.ok(match.launch(1, { x: 20, y: 0 }));
+  assert.equal(match.bonusId, null);
+  assert.equal(match.actors[1].usedThisRound, true);
+  settle(match);
+  assert.equal(match.side, 1);
+  assert.equal(match.round, 1);
+  match.destroy();
+});
+
+test('Yui does not extend a decisive shot or a shot that wipes the enemy lineup', () => {
+  for (const targetScore of [1, 5]) {
+    const match = new B.Match({ allyRoster: yuiRoster, targetScore, testOneHit: true });
+    assert.ok(match.launch(0, { x: 20, y: 0 }));
+    for (const enemy of [3, 4, 5]) match.handleContact(hit(0, enemy));
+    settle(match);
+    assert.equal(match.bonusId, null);
+    if (targetScore === 1) assert.equal(match.winner, 0);
+    else assert.equal(match.round, 2);
+    match.destroy();
+  }
+});
+
+test('Lolita Yui heals each direct allied contact during her own shot, up to full HP', () => {
+  const match = new B.Match({ allyRoster: yuiRoster, rivalRoster: yuiRoster });
+  const [yui, healer, juzi] = match.actors;
+  const enemyHealer = match.actors[4];
+  yui.hp = 30;
+  juzi.hp = juzi.maxHp - 5;
+  healer.hp = 50;
+  enemyHealer.hp = 60;
+  assert.ok(match.launch(1, { x: 20, y: 0 }));
+  match.handleContact(hit(0, 2));
+  assert.equal(yui.hp, 30);
+  assert.equal(juzi.hp, juzi.maxHp - 5);
+  match.handleContact(hit(1, 0));
+  match.handleContact(hit(2, 1));
+  match.handleContact(hit(0, 1));
+  match.handleContact(hit(1, 2));
+  assert.equal(yui.hp, 30 + 2 * healer.attack);
+  assert.equal(juzi.hp, juzi.maxHp);
+  assert.equal(healer.hp, 50);
+  match.handleContact(hit(1, 4));
+  assert.equal(enemyHealer.hp, 60 - healer.attack);
+  assert.deepEqual(match.drainEvents().filter(event => event.type === 'heal').map(({ id, amount }) => [id, amount]),
+    [[0, healer.attack], [2, 5], [0, healer.attack]]);
+  settle(match);
+  assert.ok(match.launch(3, { x: 20, y: 0 }));
+  match.handleContact(hit(3, 4));
+  assert.equal(enemyHealer.hp, 60 - healer.attack);
+  match.destroy();
+});
+
 test('battle has two distinct trios, fixed stats and turn ownership; invalid shots consume no turn', () => {
   const match = new B.Match();
   assert.deepEqual(match.actors.map(cat => cat.hp), [120, 85, 100, 120, 85, 100]);

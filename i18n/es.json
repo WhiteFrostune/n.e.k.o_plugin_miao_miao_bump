@@ -132,6 +132,8 @@
   "skin.soundOn": "Sonido",
   "skin.soundOff": "Silencio",
   "hud.aiming": "Suelta y lanza",
+  "hud.canceling": "Suelta para cancelar",
+  "ui.cancelLaunch": "Arrastra aquí para cancelar",
   "opponent.name": "林悠怡",
   "ui.launchHint": "Arrastra y suelta para lanzar",
   "test.oneHit": "Prueba: eliminación de un golpe",

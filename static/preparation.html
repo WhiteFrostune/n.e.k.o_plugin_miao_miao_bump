@@ -7,16 +7,17 @@
   <meta name="color-scheme" content="only light">
   <title>备战大厅 · 喵喵碰碰大作战</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="preparation.css?v=player-ui-1">
+  <link rel="stylesheet" href="preparation.css?v=rival-reroll-1">
   <link rel="stylesheet" href="roster-picker.css?v=numbered-toggle-1">
   <link rel="stylesheet" href="map-picker.css?v=1">
   <script defer src="maps.js?v=formation-1"></script>
   <script defer src="motion.js?v=juzi-opening-2"></script>
-  <script defer src="battle.js?v=versus-1"></script>
-  <script defer src="art.js?v=water-surface-1"></script>
+  <script defer src="battle.js?v=random-rival-1"></script>
+  <script defer src="art.js?v=yui-roster-1"></script>
   <script defer src="i18n.js?v=roster-1"></script>
   <script defer src="map-picker.js?v=player-ui-1"></script>
-  <script defer src="preparation.js?v=player-ui-1"></script>
+  <script defer src="assets/characters/roster-preview/player.js?v=roster-1"></script>
+  <script defer src="preparation.js?v=rival-reroll-1"></script>
 </head>
 <body>
   <main class="lobby">
@@ -29,10 +30,13 @@
         <div class="arena-header">
           <h2 class="team-label ally-label"><img src="assets/ui/icons/fa-solid/paw.svg" alt="">我方阵容</h2>
           <div class="map-label"><span>当前地图</span><strong id="current-map-name">夏日水池</strong></div>
-          <h2 class="team-label rival-label"><img src="assets/ui/icons/fa-solid/paw.svg" alt=""><span>林悠怡<small>对手</small></span></h2>
+          <div class="rival-header">
+            <h2 class="team-label rival-label"><img src="assets/ui/icons/fa-solid/paw.svg" alt=""><span>林悠怡<small>对手</small></span></h2>
+            <button id="reroll-rival" class="reroll-rival" type="button" aria-controls="rival-lineup" disabled>换一组对手</button>
+          </div>
         </div>
         <div class="team lineup-ally" id="ally-lineup" role="group" aria-label="我方出战位"></div>
-        <div class="team lineup-rival" id="rival-lineup" role="group" aria-label="对方阵容"></div>
+        <div class="team lineup-rival" id="rival-lineup" role="group" aria-label="对方阵容" aria-live="polite" aria-atomic="true"></div>
       </div>
       <footer class="lobby-controls">
         <div class="team-status">

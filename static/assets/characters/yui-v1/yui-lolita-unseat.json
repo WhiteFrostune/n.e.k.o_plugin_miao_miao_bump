@@ -1,0 +1,59 @@
+{
+  "image": "yui-lolita-battle-atlas.png",
+  "faceRestY": -31,
+  "worldPerSourcePixel": 0.24,
+  "frames": [
+    {
+      "id": "contact",
+      "source": {
+        "x": 567,
+        "y": 17,
+        "width": 411,
+        "height": 490
+      },
+      "anchor": {
+        "x": 779,
+        "y": 239
+      }
+    },
+    {
+      "id": "release",
+      "source": {
+        "x": 30,
+        "y": 527,
+        "width": 458,
+        "height": 482
+      },
+      "anchor": {
+        "x": 240,
+        "y": 741
+      }
+    },
+    {
+      "id": "tumble",
+      "source": {
+        "x": 557,
+        "y": 543,
+        "width": 433,
+        "height": 430
+      },
+      "anchor": {
+        "x": 780,
+        "y": 756
+      }
+    },
+    {
+      "id": "follow",
+      "source": {
+        "x": 17,
+        "y": 1044,
+        "width": 481,
+        "height": 475
+      },
+      "anchor": {
+        "x": 244,
+        "y": 1257
+      }
+    }
+  ]
+}

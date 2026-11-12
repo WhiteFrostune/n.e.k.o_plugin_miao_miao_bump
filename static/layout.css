@@ -20,6 +20,33 @@ body { background-image: url("assets/ui/beach-surround-side-v1.png"); }
 .app .selection-details { align-content: start; }
 .app .launch-tip .tip-paw { display: none; }
 .app .launch-tip span { text-wrap: balance; }
+.aim-cancel-target {
+  position: absolute;
+  z-index: 2;
+  right: clamp(8px, 2cqw, 20px);
+  bottom: clamp(8px, 2cqw, 20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 2px dashed #a05164;
+  border-radius: 14px;
+  background: #fff5ed;
+  color: #84354d;
+  box-shadow: 0 3px 0 #66304750;
+  font-size: clamp(12px, 1.8cqw, 16px);
+  pointer-events: none;
+}
+.aim-cancel-target[hidden] { display: none; }
+.aim-cancel-target span { font-size: 1.5em; line-height: 1; }
+.aim-cancel-target[data-active="true"] {
+  border-style: solid;
+  border-color: #fff1e8;
+  background: #a13955;
+  color: #fff;
+}
 .app .skill-chip img { filter: brightness(0) saturate(100%) invert(69%) sepia(99%) saturate(824%) hue-rotate(345deg) brightness(102%); }
 
 @media (min-width: 741px) {

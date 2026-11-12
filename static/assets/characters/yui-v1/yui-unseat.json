@@ -1,0 +1,59 @@
+{
+  "image": "yui-battle-atlas.png",
+  "faceRestY": -28,
+  "worldPerSourcePixel": 0.23,
+  "frames": [
+    {
+      "id": "contact",
+      "source": {
+        "x": 576,
+        "y": 9,
+        "width": 386,
+        "height": 481
+      },
+      "anchor": {
+        "x": 772,
+        "y": 239
+      }
+    },
+    {
+      "id": "release",
+      "source": {
+        "x": 46,
+        "y": 527,
+        "width": 396,
+        "height": 471
+      },
+      "anchor": {
+        "x": 245,
+        "y": 744
+      }
+    },
+    {
+      "id": "tumble",
+      "source": {
+        "x": 559,
+        "y": 535,
+        "width": 402,
+        "height": 432
+      },
+      "anchor": {
+        "x": 771,
+        "y": 752
+      }
+    },
+    {
+      "id": "follow",
+      "source": {
+        "x": 55,
+        "y": 1036,
+        "width": 427,
+        "height": 490
+      },
+      "anchor": {
+        "x": 288,
+        "y": 1251
+      }
+    }
+  ]
+}

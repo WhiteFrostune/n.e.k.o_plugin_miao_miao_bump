@@ -282,7 +282,7 @@ def run(url, channel=None):
             page.wait_for_function("Boolean(window.miaoPlayground)", polling=25)
             state = snapshot(page)
             assert [track["id"] for track in state["opening"]] == [0, 1, 3, 4]
-            assert [cat["entrance"] for cat in state["art"]["characters"]] == [True, True, False]
+            assert [cat["entrance"] for cat in state["art"]["characters"]] == [True, True, False, True, True]
             assert all(cat["loaded"] for cat in state["art"]["characters"])
             assert len(state["rings"]) == 6
             tick(page, 18)
